@@ -190,7 +190,8 @@ function normalizeReflection(reflection) {
     challenge: reflection.challenge || "",
     tomorrow: reflection.tomorrow || "Choose one small promise for tomorrow.",
     source: reflection.source || "lm-studio",
-    model: reflection.model || ""
+    model: reflection.model || "",
+    ragUsed: Boolean(reflection.ragUsed)
   };
 }
 
@@ -499,6 +500,10 @@ function updateLocalStatus(reflection) {
     return;
   }
   if (reflection.source === "lm-studio") {
+    if (reflection.ragUsed) {
+      $("localStatus").textContent = reflection.model ? `Local AI + RAG: ${reflection.model}` : "Local AI + RAG connected";
+      return;
+    }
     $("localStatus").textContent = reflection.model ? `Local AI: ${reflection.model}` : "Local AI connected";
     return;
   }

@@ -1,6 +1,6 @@
 # Daily Reflection Agent
 
-A local reflection agent that turns messy daily activity notes into a calm, meaningful growth review.
+A local AI-powered reflection agent that turns messy daily activity notes into a calm, meaningful growth review.
 
 It is tuned for:
 
@@ -13,20 +13,120 @@ It is tuned for:
 - confidence and consistency
 - gratitude and Atomic Habits-style habit formation
 
+## What It Does
+
+The app helps you convert rough daily notes into:
+
+- score for the day
+- meaningful summary
+- key pattern
+- direct challenge
+- habit cue
+- tomorrow's promise
+- saved reflection history
+- yesterday's promise check
+- weekly pattern review
+
+It runs locally with LM Studio and can use your personal Markdown notes through a lightweight RAG layer.
+
+## High-Level Flow
+
+```mermaid
+flowchart TD
+    A["User writes daily notes"] --> B["Browser UI"]
+    B --> C["Local Python server"]
+    C --> D["RAG retriever"]
+    D --> E["Personal knowledge notes"]
+    D --> F["Relevant knowledge chunks"]
+    F --> G["Prompt sent to LM Studio"]
+    C --> G
+    G --> H["Local Gemma model"]
+    H --> I["Structured reflection JSON"]
+    I --> B
+    B --> J["Local browser storage"]
+```
+
+## RAG Flow
+
+RAG means Retrieval-Augmented Generation. Instead of sending only today's notes to the model, the app first retrieves relevant context from your personal knowledge base.
+
+```mermaid
+flowchart LR
+    A["knowledge/*.md"] --> B["Chunk markdown notes"]
+    B --> C["Build local index"]
+    C --> D["data/rag_index.json"]
+    E["Today's notes"] --> F["Retrieve top matching chunks"]
+    D --> F
+    F --> G["Inject retrieved context into prompt"]
+    G --> H["Gemma reflection output"]
+```
+
+Before RAG:
+
+```text
+Today's notes -> Gemma -> reflection
+```
+
+After RAG:
+
+```text
+Personal notes -> chunks -> retrieval index
+Today's notes -> retrieve relevant personal context -> Gemma -> personalized reflection
+```
+
+This makes the app less generic. It can connect today's notes to your long-term themes, such as AI career growth, health discipline, comfort-zone patterns, and builder identity.
+
 ## Project Structure
 
 ```text
 daily-reflection-agent/
-├── web/                 # Browser UI
-├── data/reflections/    # Saved Markdown reflections from the CLI
-├── examples/            # Sample daily notes
-├── ai-edge-skills/      # Android AI Edge Gallery skill export
-├── server.py            # Local LM Studio bridge and web server
-├── daily_reflection_agent.py
-└── README.md
+  web/                       Browser UI
+  data/reflections/          Saved Markdown reflections from the CLI
+  knowledge/                 Private Markdown knowledge base for RAG
+  scripts/                   Utility scripts
+  examples/                  Sample daily notes
+  ai-edge-skills/            Android AI Edge Gallery skill export
+  server.py                  Local LM Studio bridge and web server
+  rag.py                     Local retrieval layer
+  daily_reflection_agent.py  Optional CLI reflection agent
+  README.md
 ```
 
-## Open The UI With Local AI
+## Personal Knowledge RAG
+
+Add Markdown notes under:
+
+```text
+knowledge/
+```
+
+Build the local retrieval index:
+
+```powershell
+python .\scripts\index_knowledge.py
+```
+
+This creates:
+
+```text
+data/rag_index.json
+```
+
+`data/rag_index.json` is generated and ignored by git.
+
+To inspect retrieval directly:
+
+```powershell
+python .\scripts\query_knowledge.py "I avoided AI building and need a small habit cue"
+```
+
+When the app uses retrieved knowledge, the UI status shows:
+
+```text
+Local AI + RAG
+```
+
+## Run With Local AI
 
 1. Open LM Studio.
 2. Load your Gemma model.
@@ -52,9 +152,13 @@ Your notes stay on your laptop. The UI sends them only to your local LM Studio s
 
 ## Offline UI
 
-Open [index.html](C:/Users/saina/Documents/Codex/daily-reflection-agent/web/index.html) in your browser.
+Open:
 
-Opening the file directly runs the simpler rule-based fallback without LM Studio. It keeps your draft and saved reflections in the browser's local storage.
+```text
+web/index.html
+```
+
+Opening the file directly runs the simpler rule-based fallback without LM Studio. It keeps your draft and saved reflections in browser local storage.
 
 ## Optional CLI
 
@@ -76,33 +180,24 @@ From a notes file:
 python daily_reflection_agent.py --file examples/today_sample.txt
 ```
 
-Each CLI run prints a concise reflection and saves a Markdown file under `data/reflections/`.
+Each CLI run prints a concise reflection and saves a Markdown file under:
+
+```text
+data/reflections/
+```
 
 ## Suggested Daily Input
 
 Write rough points from your mobile. Messy is fine.
 
 ```text
-- Watched 1 hour AI podcast from Raw Talks
-- Completed some daily tasks
+- Watched 1 hour AI podcast
+- Completed daily tasks
 - Felt like I did not accomplish enough
 - Want to build AI agents instead of watching more videos
 - Did not exercise
 - Felt grateful for having a holiday
 ```
-
-## What It Produces
-
-- score for the day
-- meaningful summary
-- key pattern
-- direct challenge
-- habit cue
-- tomorrow's small win
-- history view for saved reflections
-- yesterday's promise check
-- weekly pattern review from saved reflections
-- export/import for your local data
 
 ## What Is Stored
 
@@ -113,10 +208,31 @@ The browser stores:
 - `promiseStatus`
 - `reflectionCache`
 
-This is local to the browser profile for `http://127.0.0.1:8765`.
+This is local to the browser profile for:
 
-## Good First Upgrade Ideas
+```text
+http://127.0.0.1:8765
+```
 
-- Add a `--tone` option for balanced or highly challenging feedback.
-- Add local passcode/encrypted storage.
-- Package as Android APK later with no internet permission.
+The repository ignores private/generated files:
+
+- `knowledge/*.md`
+- `data/reflections/`
+- `data/rag_index.json`
+- `.env`
+
+## Learning Path
+
+This project currently teaches:
+
+- local LLM integration with LM Studio
+- prompt engineering with structured JSON output
+- browser UI and localStorage memory
+- RAG fundamentals: ingest, chunk, index, retrieve, augment, generate
+- promise tracking and weekly pattern analysis
+
+Next natural upgrade:
+
+```text
+Replace keyword retrieval with Chroma + embeddings.
+```

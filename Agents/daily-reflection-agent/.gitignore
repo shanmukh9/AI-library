@@ -8,6 +8,10 @@ server.err.log
 data/reflections/
 data/exports/
 data/notion-exports/
+data/rag_index.json
+
+knowledge/*.md
+!knowledge/README.md
 
 .env
 .env.*

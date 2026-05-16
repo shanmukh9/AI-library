@@ -7,6 +7,8 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from rag import KNOWLEDGE_DIR, RAG_INDEX_PATH, build_index, format_context, retrieve, save_index
+
 
 HOST = "127.0.0.1"
 PORT = 8765
@@ -122,6 +124,7 @@ def extract_json_object(content: str) -> dict:
 
 def call_lm_studio(notes: str, previous_promise: str = "", previous_promise_status: str = "") -> dict:
     model_id = get_lm_studio_model_id()
+    rag_context = get_rag_context(notes)
     promise_context = ""
     if previous_promise:
         promise_context = (
@@ -138,6 +141,7 @@ def call_lm_studio(notes: str, previous_promise: str = "", previous_promise_stat
                 "role": "user",
                 "content": (
                     "Reflect on these messy daily notes. Compress them into a meaningful growth review.\n\n"
+                    f"{rag_context}\n\n"
                     f"{notes}"
                     f"{promise_context}"
                 ),
@@ -170,7 +174,26 @@ def call_lm_studio(notes: str, previous_promise: str = "", previous_promise_stat
     parsed = extract_json_object(content)
     reflection = normalize_reflection(parsed)
     reflection["model"] = model_id
+    reflection["ragUsed"] = bool(rag_context)
     return reflection
+
+
+def ensure_rag_index() -> None:
+    if RAG_INDEX_PATH.exists() or not KNOWLEDGE_DIR.exists():
+        return
+
+    markdown_files = list(KNOWLEDGE_DIR.glob("*.md"))
+    if not markdown_files:
+        return
+
+    index = build_index(KNOWLEDGE_DIR)
+    save_index(index)
+
+
+def get_rag_context(query: str) -> str:
+    ensure_rag_index()
+    chunks = retrieve(query, top_k=3)
+    return format_context(chunks)
 
 
 def call_lm_studio_weekly(reflections: list[dict], promise_status: dict) -> dict:
@@ -352,10 +375,13 @@ class ReflectionHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    ensure_rag_index()
     server = ThreadingHTTPServer((HOST, PORT), ReflectionHandler)
     print(f"Daily Reflection Agent running at http://{HOST}:{PORT}")
     print("LM Studio should be running its local server at http://127.0.0.1:1234")
     print(f"LM Studio request timeout: {LM_STUDIO_TIMEOUT_SECONDS} seconds")
+    if RAG_INDEX_PATH.exists():
+        print(f"RAG index loaded: {RAG_INDEX_PATH}")
     server.serve_forever()
 
 
