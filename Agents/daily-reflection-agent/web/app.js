@@ -1,4 +1,4 @@
-const domains = {
+﻿const domains = {
   "Fitness and Energy": {
     keywords: ["walk", "gym", "workout", "exercise", "run", "steps", "sleep", "water", "food", "diet", "health", "fitness", "meditation", "yoga"],
     nextRep: "Take a 10-minute walk or mobility session before the day gets noisy."
@@ -191,7 +191,8 @@ function normalizeReflection(reflection) {
     tomorrow: reflection.tomorrow || "Choose one small promise for tomorrow.",
     source: reflection.source || "lm-studio",
     model: reflection.model || "",
-    ragUsed: Boolean(reflection.ragUsed)
+    ragUsed: Boolean(reflection.ragUsed),
+    ragDebug: Array.isArray(reflection.ragDebug) ? reflection.ragDebug : []
   };
 }
 
@@ -206,6 +207,7 @@ function render(reflection) {
   $("tomorrowText").textContent = currentReflection.tomorrow;
   $("scoreRing").style.background = `conic-gradient(var(--sage) ${currentReflection.score * 3.6}deg, #e9e3d5 0deg)`;
   updateLocalStatus(currentReflection);
+  renderRagDebug(currentReflection.ragDebug);
 }
 
 function notesHash(text) {
@@ -231,9 +233,10 @@ function setCache(hash, reflection) {
 async function buildAiReflection(text) {
   const previous = previousReflectionForPromise();
   const promiseStatus = previous ? getPromiseStatus()[previous.id] || "" : "";
+  const includeRagDebug = $("ragDebugToggle").checked;
   const hash = notesHash(`${text}|${previous?.tomorrow || ""}|${promiseStatus}`);
   const cache = getCache();
-  if (cache[hash]) {
+  if (!includeRagDebug && cache[hash]) {
     return { ...cache[hash], label: `${cache[hash].label} · cached` };
   }
 
@@ -245,7 +248,8 @@ async function buildAiReflection(text) {
     body: JSON.stringify({
       notes: text,
       previousPromise: previous?.tomorrow || "",
-      previousPromiseStatus: promiseStatus
+      previousPromiseStatus: promiseStatus,
+      includeRagDebug
     })
   });
 
@@ -256,7 +260,9 @@ async function buildAiReflection(text) {
   }
 
   const reflection = await response.json();
-  setCache(hash, reflection);
+  if (!includeRagDebug) {
+    setCache(hash, reflection);
+  }
   return reflection;
 }
 
@@ -494,6 +500,33 @@ function renderWeeklyPlaceholder() {
   $("weeklyExperiment").textContent = "One small experiment will appear here.";
 }
 
+function renderRagDebug(chunks) {
+  const panel = $("ragDebugPanel");
+  const list = $("ragDebugList");
+  list.innerHTML = "";
+
+  if (!$("ragDebugToggle").checked || !chunks.length) {
+    panel.hidden = true;
+    return;
+  }
+
+  chunks.forEach((chunk, index) => {
+    const item = document.createElement("article");
+    item.className = "rag-debug-item";
+    item.innerHTML = `
+      <div class="rag-debug-topline">
+        <span>${index + 1}. ${escapeHtml(chunk.source || "knowledge")}</span>
+        <strong>${Number(chunk.score || 0).toFixed(2)}</strong>
+      </div>
+      <h3>${escapeHtml(chunk.heading || "General")}</h3>
+      <p>${escapeHtml(chunk.excerpt || "")}</p>
+    `;
+    list.appendChild(item);
+  });
+
+  panel.hidden = false;
+}
+
 function updateLocalStatus(reflection) {
   if (window.location.protocol === "file:") {
     $("localStatus").textContent = "Offline fallback";
@@ -592,6 +625,10 @@ $("clearBtn").addEventListener("click", () => {
 });
 $("saveBtn").addEventListener("click", saveReflection);
 $("weeklyBtn").addEventListener("click", reviewWeek);
+$("hideRagDebugBtn").addEventListener("click", () => {
+  $("ragDebugPanel").hidden = true;
+  $("ragDebugToggle").checked = false;
+});
 $("exportBtn").addEventListener("click", exportHistory);
 $("importFile").addEventListener("change", (event) => importHistory(event.target.files[0]));
 $("clearHistoryBtn").addEventListener("click", clearHistory);
@@ -607,3 +644,4 @@ $("notes").value = localStorage.getItem("draftNotes") || "";
 $("notes").addEventListener("input", () => localStorage.setItem("draftNotes", $("notes").value));
 renderHistory();
 renderPromiseCheck();
+

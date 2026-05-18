@@ -126,6 +126,23 @@ When the app uses retrieved knowledge, the UI status shows:
 Local AI + RAG
 ```
 
+## RAG Debug Mode
+
+The main UI stays calm by default. To inspect retrieval, enable:
+
+```text
+Show RAG debug after reflection
+```
+
+When enabled, the app shows a `Knowledge used` panel after reflection with:
+
+- source file
+- heading
+- retrieval score
+- short excerpt
+
+This helps debug whether RAG is pulling the right context before the answer is generated.
+
 ## Run With Local AI
 
 1. Open LM Studio.

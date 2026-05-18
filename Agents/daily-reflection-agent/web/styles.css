@@ -191,6 +191,22 @@ textarea:focus {
   line-height: 1.45;
 }
 
+.debug-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.debug-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--moss);
+}
+
 .mini-controls,
 .controls,
 .history-actions {
@@ -273,6 +289,7 @@ button:disabled {
 .score-band,
 .reflection-card,
 .action-strip,
+.rag-debug-panel,
 .weekly-panel,
 .history-panel {
   border: 1px solid rgba(64, 93, 67, 0.14);
@@ -381,6 +398,15 @@ button:disabled {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(247, 241, 230, 0.82));
 }
 
+.rag-debug-panel {
+  padding: 22px;
+  background: rgba(247, 249, 246, 0.82);
+}
+
+.rag-debug-panel[hidden] {
+  display: none;
+}
+
 .panel-heading {
   display: flex;
   align-items: flex-start;
@@ -398,6 +424,50 @@ button:disabled {
   margin: 2px 0 16px;
   color: #3f443d;
   line-height: 1.55;
+}
+
+.debug-copy {
+  margin: 2px 0 16px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.rag-debug-list {
+  display: grid;
+  gap: 10px;
+}
+
+.rag-debug-item {
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(255, 254, 249, 0.68);
+}
+
+.rag-debug-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  margin-bottom: 8px;
+}
+
+.rag-debug-topline strong {
+  color: var(--moss);
+}
+
+.rag-debug-item h3 {
+  margin: 0 0 7px;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.rag-debug-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.45;
 }
 
 .weekly-grid {

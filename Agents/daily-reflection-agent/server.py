@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import ast
+import re
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -19,6 +21,56 @@ LM_STUDIO_TIMEOUT_SECONDS = 240
 ROOT = Path(__file__).parent.resolve()
 WEB_ROOT = ROOT / "web"
 
+REFLECTION_JSON_SCHEMA = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "daily_reflection",
+        "schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "score": {"type": "integer", "minimum": 20, "maximum": 95},
+                "label": {"type": "string"},
+                "title": {"type": "string"},
+                "summary": {"type": "string"},
+                "pattern": {"type": "string"},
+                "challenge": {"type": "string"},
+                "tomorrow": {"type": "string"},
+            },
+            "required": ["score", "label", "title", "summary", "pattern", "challenge", "tomorrow"],
+        },
+    },
+}
+
+WEEKLY_JSON_SCHEMA = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "weekly_review",
+        "schema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "title": {"type": "string"},
+                "summary": {"type": "string"},
+                "repeatedPattern": {"type": "string"},
+                "builderSignal": {"type": "string"},
+                "comfortZone": {"type": "string"},
+                "experiment": {"type": "string"},
+                "scoreTrend": {"type": "string"},
+            },
+            "required": [
+                "title",
+                "summary",
+                "repeatedPattern",
+                "builderSignal",
+                "comfortZone",
+                "experiment",
+                "scoreTrend",
+            ],
+        },
+    },
+}
+
 
 SYSTEM_PROMPT = """You are a local daily reflection coach.
 
@@ -34,11 +86,10 @@ Tone:
 Use growth mindset, neuroplasticity, gratitude, and Atomic Habits ideas in plain language.
 
 Important output rule:
-- Do not think step by step.
-- Do not explain your reasoning.
-- Do not output analysis.
 - Begin your response with { and end with }.
 - Return one final JSON object only.
+- Do not include analysis, reasoning, markdown, bullets, or commentary.
+- If you are thinking internally, do not print that thinking.
 
 Return JSON with these keys:
 score: integer from 20 to 95
@@ -63,10 +114,10 @@ Tone:
 - concise
 
 Important output rule:
-- Do not think step by step.
-- Do not output analysis.
 - Begin your response with { and end with }.
 - Return one final JSON object only.
+- Do not include analysis, reasoning, markdown, bullets, or commentary.
+- If you are thinking internally, do not print that thinking.
 
 Return JSON with these keys:
 title: one short sentence
@@ -112,19 +163,76 @@ def extract_json_object(content: str) -> dict:
         content = content.strip("`")
         content = content.removeprefix("json").strip()
 
+    candidates = [content]
+    start = content.find("{")
+    end = content.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidates.append(content[start : end + 1])
+
+    last_error: Exception | None = None
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+
+        try:
+            parsed = ast.literal_eval(candidate)
+            if isinstance(parsed, dict):
+                return parsed
+        except (ValueError, SyntaxError) as exc:
+            last_error = exc
+
+        repaired = repair_json_like(candidate)
+        if repaired != candidate:
+            try:
+                return json.loads(repaired)
+            except json.JSONDecodeError as exc:
+                last_error = exc
+
+    preview = content[:500].replace("\n", "\\n")
+    raise ValueError(f"Could not parse model JSON. Preview: {preview}") from last_error
+
+
+def repair_json_like(content: str) -> str:
+    repaired = content.strip()
+    repaired = re.sub(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)\s*:", r'\1"\2":', repaired)
+    repaired = repaired.replace("'", '"')
+    repaired = re.sub(r",(\s*[}\]])", r"\1", repaired)
+    return repaired
+
+
+def parse_lm_message_content(body: dict) -> dict:
+    message = body["choices"][0]["message"]
+    content = str(message.get("content") or "").strip()
+    if not content and message.get("reasoning_content"):
+        raise ValueError(
+            "The model produced reasoning text but no final JSON. Let it finish, reduce output size, "
+            "disable reasoning/thinking in LM Studio if available, or use a non-reasoning/local-instruct model."
+        )
+    return extract_json_object(content)
+
+
+def log_parse_error(exc: Exception) -> None:
+    print(f"LM Studio response parse error: {exc}")
+
+
+def parse_json_response(body: dict) -> dict:
     try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        start = content.find("{")
-        end = content.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            return json.loads(content[start : end + 1])
+        return parse_lm_message_content(body)
+    except Exception as exc:
+        log_parse_error(exc)
         raise
 
 
-def call_lm_studio(notes: str, previous_promise: str = "", previous_promise_status: str = "") -> dict:
+def call_lm_studio(
+    notes: str,
+    previous_promise: str = "",
+    previous_promise_status: str = "",
+    include_rag_debug: bool = False,
+) -> dict:
     model_id = get_lm_studio_model_id()
-    rag_context = get_rag_context(notes)
+    rag_context, rag_chunks = get_rag_context(notes)
     promise_context = ""
     if previous_promise:
         promise_context = (
@@ -150,6 +258,7 @@ def call_lm_studio(notes: str, previous_promise: str = "", previous_promise_stat
         "temperature": 0.55,
         "max_tokens": 1200,
         "reasoning_effort": "none",
+        "response_format": REFLECTION_JSON_SCHEMA,
         "stream": False,
     }
 
@@ -163,18 +272,12 @@ def call_lm_studio(notes: str, previous_promise: str = "", previous_promise_stat
     with urllib.request.urlopen(request, timeout=LM_STUDIO_TIMEOUT_SECONDS) as response:
         body = json.loads(response.read().decode("utf-8"))
 
-    message = body["choices"][0]["message"]
-    content = str(message.get("content") or "").strip()
-    if not content and message.get("reasoning_content"):
-        raise ValueError(
-            "The model produced reasoning text but no final JSON. Let it finish, reduce output size, "
-            "disable reasoning/thinking in LM Studio if available, or use a non-reasoning/local-instruct model."
-        )
-
-    parsed = extract_json_object(content)
+    parsed = parse_json_response(body)
     reflection = normalize_reflection(parsed)
     reflection["model"] = model_id
     reflection["ragUsed"] = bool(rag_context)
+    if include_rag_debug:
+        reflection["ragDebug"] = rag_chunks
     return reflection
 
 
@@ -190,10 +293,19 @@ def ensure_rag_index() -> None:
     save_index(index)
 
 
-def get_rag_context(query: str) -> str:
+def get_rag_context(query: str) -> tuple[str, list[dict]]:
     ensure_rag_index()
     chunks = retrieve(query, top_k=3)
-    return format_context(chunks)
+    debug_chunks = [
+        {
+            "source": chunk.source,
+            "heading": chunk.heading,
+            "score": round(chunk.score, 2),
+            "excerpt": chunk.text[:360],
+        }
+        for chunk in chunks
+    ]
+    return format_context(chunks), debug_chunks
 
 
 def call_lm_studio_weekly(reflections: list[dict], promise_status: dict) -> dict:
@@ -228,6 +340,7 @@ def call_lm_studio_weekly(reflections: list[dict], promise_status: dict) -> dict
         "temperature": 0.5,
         "max_tokens": 1200,
         "reasoning_effort": "none",
+        "response_format": WEEKLY_JSON_SCHEMA,
         "stream": False,
     }
 
@@ -241,12 +354,7 @@ def call_lm_studio_weekly(reflections: list[dict], promise_status: dict) -> dict
     with urllib.request.urlopen(request, timeout=LM_STUDIO_TIMEOUT_SECONDS) as response:
         body = json.loads(response.read().decode("utf-8"))
 
-    message = body["choices"][0]["message"]
-    content = str(message.get("content") or "").strip()
-    if not content and message.get("reasoning_content"):
-        raise ValueError("The model produced reasoning text but no final weekly JSON.")
-
-    parsed = extract_json_object(content)
+    parsed = parse_json_response(body)
     weekly = normalize_weekly_review(parsed)
     weekly["model"] = model_id
     return weekly
@@ -319,12 +427,13 @@ class ReflectionHandler(BaseHTTPRequestHandler):
         notes = str(body.get("notes", "")).strip()
         previous_promise = str(body.get("previousPromise", "")).strip()
         previous_promise_status = str(body.get("previousPromiseStatus", "")).strip()
+        include_rag_debug = bool(body.get("includeRagDebug", False))
 
         if not notes:
             self.send_json(400, {"error": "Notes are required"})
             return
 
-        self.handle_lm_call(lambda: call_lm_studio(notes, previous_promise, previous_promise_status))
+        self.handle_lm_call(lambda: call_lm_studio(notes, previous_promise, previous_promise_status, include_rag_debug))
 
     def handle_lm_call(self, callback) -> None:
         try:
@@ -350,7 +459,6 @@ class ReflectionHandler(BaseHTTPRequestHandler):
                 },
             )
         except (KeyError, ValueError, json.JSONDecodeError) as exc:
-            print(f"LM Studio response parse error: {exc}")
             self.send_json(
                 502,
                 {

@@ -46,6 +46,11 @@
             <button class="primary" id="reflectBtn" type="button">Reflect</button>
             <button class="secondary" id="clearBtn" type="button">Clear</button>
           </div>
+
+          <label class="debug-toggle" for="ragDebugToggle">
+            <input id="ragDebugToggle" type="checkbox">
+            <span>Show RAG debug after reflection</span>
+          </label>
         </aside>
 
         <section class="output-panel" id="outputPanel" aria-label="Reflection output">
@@ -83,6 +88,18 @@
             </div>
             <button class="secondary compact" id="saveBtn" type="button">Save</button>
           </article>
+
+          <section class="rag-debug-panel" id="ragDebugPanel" hidden>
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">RAG debug</p>
+                <h2>Knowledge used</h2>
+              </div>
+              <button class="secondary compact" id="hideRagDebugBtn" type="button">Hide</button>
+            </div>
+            <p class="debug-copy">These are the retrieved knowledge chunks added to the local Gemma prompt.</p>
+            <div class="rag-debug-list" id="ragDebugList"></div>
+          </section>
 
           <section class="weekly-panel" aria-label="Weekly pattern review">
             <div class="panel-heading">
