@@ -84,6 +84,7 @@ daily-reflection-agent/
   data/reflections/          Saved Markdown reflections from the CLI
   knowledge/                 Private Markdown knowledge base for RAG
   scripts/                   Utility scripts
+  evals/                     RAG retrieval evaluation cases
   examples/                  Sample daily notes
   ai-edge-skills/            Android AI Edge Gallery skill export
   server.py                  Local LM Studio bridge and web server
@@ -119,6 +120,47 @@ To inspect retrieval directly:
 ```powershell
 python .\scripts\query_knowledge.py "I avoided AI building and need a small habit cue"
 ```
+
+## RAG Evaluation
+
+RAG should be measured, not trusted blindly. This project includes a small retrieval evaluation harness:
+
+```text
+evals/rag_eval_cases.json
+scripts/evaluate_rag.py
+```
+
+Each eval case contains:
+
+- a realistic query
+- expected knowledge headings that should appear in the top retrieved chunks
+
+Run the baseline eval:
+
+```powershell
+python .\scripts\evaluate_rag.py
+```
+
+Example output:
+
+```text
+[PASS] ai_builder_avoidance
+Retrieved:
+  * 1. Career strengths
+    2. Core Patterns
+  * 3. Notes for Another Agent
+
+Summary
+Passed: 6/6
+Hit rate: 100.0%
+```
+
+This helps answer:
+
+- Did retrieval find the right personal knowledge?
+- Which chunk ranked first?
+- Did irrelevant chunks appear?
+- Is the retriever ready to be replaced with vector search?
 
 When the app uses retrieved knowledge, the UI status shows:
 
