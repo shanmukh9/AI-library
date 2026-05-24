@@ -9,6 +9,7 @@ data/reflections/
 data/exports/
 data/notion-exports/
 data/rag_index.json
+data/vector_index.json
 
 knowledge/*.md
 !knowledge/README.md

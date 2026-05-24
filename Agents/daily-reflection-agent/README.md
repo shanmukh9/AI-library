@@ -46,9 +46,20 @@ flowchart TD
     B --> J["Local browser storage"]
 ```
 
+## Local Model Roles
+
+LM Studio can expose more than one model at the same time. This app uses them for different jobs:
+
+```text
+Gemma chat model                 -> generates the reflection JSON
+Nomic embedding model            -> converts text into vectors for Vector RAG
+```
+
+The server intentionally skips embedding models when choosing the chat model for `/v1/chat/completions`.
+
 ## RAG Flow
 
-RAG means Retrieval-Augmented Generation. Instead of sending only today's notes to the model, the app first retrieves relevant context from your personal knowledge base.
+  RAG means Retrieval-Augmented Generation. Instead of sending only today's notes to the model, the app first retrieves relevant context from your personal knowledge base.
 
 ```mermaid
 flowchart LR
@@ -168,6 +179,87 @@ When the app uses retrieved knowledge, the UI status shows:
 Local AI + RAG
 ```
 
+## Vector RAG
+
+The project supports two retrieval modes:
+
+```text
+Keyword RAG  - matches terms and headings
+Vector RAG   - embeds text and retrieves by semantic similarity
+```
+
+Keyword RAG is fast, transparent, and works without an embedding model. Vector RAG needs LM Studio's embedding endpoint and a local embedding model such as:
+
+```text
+text-embedding-nomic-embed-text-v1.5
+```
+
+Build the vector index:
+
+```powershell
+python .\scripts\index_knowledge_vectors.py
+```
+
+This creates:
+
+```text
+data/vector_index.json
+```
+
+Query vector retrieval directly:
+
+```powershell
+python .\scripts\query_vector_knowledge.py "I consumed AI content but avoided building"
+```
+
+Compare retrieval modes:
+
+```powershell
+python .\scripts\evaluate_rag.py --mode keyword
+python .\scripts\evaluate_rag.py --mode vector
+```
+
+In the UI, choose:
+
+```text
+RAG mode: Keyword | Vector
+```
+
+### Vector RAG Architecture
+
+```mermaid
+flowchart TD
+    A["knowledge/*.md"] --> B["Chunk markdown notes"]
+    B --> C["Embedding model in LM Studio"]
+    C --> D["Chunk vectors"]
+    D --> E["data/vector_index.json"]
+
+    F["User daily notes"] --> G["Browser UI"]
+    G --> H["server.py"]
+    H --> I["Embedding model in LM Studio"]
+    I --> J["Query vector"]
+    E --> K["Cosine similarity search"]
+    J --> K
+    K --> L["Top matching knowledge chunks"]
+    L --> M["Prompt context"]
+    F --> M
+    M --> N["Gemma chat model in LM Studio"]
+    N --> O["Reflection JSON"]
+    O --> G
+```
+
+Vector RAG has two phases:
+
+```text
+Index time:
+knowledge chunks -> embedding model -> saved vectors
+
+Query time:
+daily notes -> embedding model -> query vector -> compare with saved vectors
+```
+
+The app does not regenerate all knowledge vectors during every reflection. It only embeds the current query and compares it against the saved vector index.
+
 ## RAG Debug Mode
 
 The main UI stays calm by default. To inspect retrieval, enable:
@@ -278,6 +370,7 @@ The repository ignores private/generated files:
 - `knowledge/*.md`
 - `data/reflections/`
 - `data/rag_index.json`
+- `data/vector_index.json`
 - `.env`
 
 ## Learning Path
@@ -288,10 +381,11 @@ This project currently teaches:
 - prompt engineering with structured JSON output
 - browser UI and localStorage memory
 - RAG fundamentals: ingest, chunk, index, retrieve, augment, generate
+- vector RAG with local embeddings
 - promise tracking and weekly pattern analysis
 
 Next natural upgrade:
 
 ```text
-Replace keyword retrieval with Chroma + embeddings.
+Compare keyword, vector, and hybrid retrieval quality.
 ```

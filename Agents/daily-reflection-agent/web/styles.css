@@ -201,6 +201,56 @@ textarea:focus {
   line-height: 1.35;
 }
 
+.rag-mode-control {
+  margin-top: 16px;
+}
+
+.rag-mode-hint {
+  max-width: 360px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.42;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-width: 280px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.segmented-control label {
+  display: block;
+}
+
+.segmented-control input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented-control span {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 740;
+  cursor: pointer;
+}
+
+.segmented-control input:checked + span {
+  color: #fff;
+  background: var(--moss);
+}
+
 .debug-toggle input {
   width: 16px;
   height: 16px;

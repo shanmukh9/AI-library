@@ -47,6 +47,21 @@
             <button class="secondary" id="clearBtn" type="button">Clear</button>
           </div>
 
+          <div class="rag-mode-control" aria-label="RAG retrieval mode">
+            <p class="section-kicker">RAG mode</p>
+            <div class="segmented-control">
+              <label>
+                <input type="radio" name="ragMode" value="keyword" checked>
+                <span>Keyword</span>
+              </label>
+              <label>
+                <input type="radio" name="ragMode" value="vector">
+                <span>Vector</span>
+              </label>
+            </div>
+            <p class="rag-mode-hint" id="ragModeHint">Keyword matches exact terms and headings. It is fast and transparent.</p>
+          </div>
+
           <label class="debug-toggle" for="ragDebugToggle">
             <input id="ragDebugToggle" type="checkbox">
             <span>Show RAG debug after reflection</span>
@@ -93,7 +108,7 @@
             <div class="panel-heading">
               <div>
                 <p class="section-kicker">RAG debug</p>
-                <h2>Knowledge used</h2>
+                <h2 id="ragDebugTitle">Knowledge used</h2>
               </div>
               <button class="secondary compact" id="hideRagDebugBtn" type="button">Hide</button>
             </div>

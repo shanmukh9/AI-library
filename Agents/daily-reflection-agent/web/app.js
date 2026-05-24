@@ -191,6 +191,7 @@ function normalizeReflection(reflection) {
     tomorrow: reflection.tomorrow || "Choose one small promise for tomorrow.",
     source: reflection.source || "lm-studio",
     model: reflection.model || "",
+    ragMode: reflection.ragMode || getSelectedRagMode(),
     ragUsed: Boolean(reflection.ragUsed),
     ragDebug: Array.isArray(reflection.ragDebug) ? reflection.ragDebug : []
   };
@@ -234,7 +235,8 @@ async function buildAiReflection(text) {
   const previous = previousReflectionForPromise();
   const promiseStatus = previous ? getPromiseStatus()[previous.id] || "" : "";
   const includeRagDebug = $("ragDebugToggle").checked;
-  const hash = notesHash(`${text}|${previous?.tomorrow || ""}|${promiseStatus}`);
+  const ragMode = getSelectedRagMode();
+  const hash = notesHash(`${text}|${previous?.tomorrow || ""}|${promiseStatus}|${ragMode}`);
   const cache = getCache();
   if (!includeRagDebug && cache[hash]) {
     return { ...cache[hash], label: `${cache[hash].label} · cached` };
@@ -249,7 +251,8 @@ async function buildAiReflection(text) {
       notes: text,
       previousPromise: previous?.tomorrow || "",
       previousPromiseStatus: promiseStatus,
-      includeRagDebug
+      includeRagDebug,
+      ragMode
     })
   });
 
@@ -510,13 +513,17 @@ function renderRagDebug(chunks) {
     return;
   }
 
+  const mode = currentReflection?.ragMode || getSelectedRagMode();
+  $("ragDebugTitle").textContent = mode === "vector" ? "Knowledge used by Vector RAG" : "Knowledge used by Keyword RAG";
+
   chunks.forEach((chunk, index) => {
+    const scoreLabel = mode === "vector" ? "similarity" : "score";
     const item = document.createElement("article");
     item.className = "rag-debug-item";
     item.innerHTML = `
       <div class="rag-debug-topline">
         <span>${index + 1}. ${escapeHtml(chunk.source || "knowledge")}</span>
-        <strong>${Number(chunk.score || 0).toFixed(2)}</strong>
+        <strong>${scoreLabel}: ${Number(chunk.score || 0).toFixed(mode === "vector" ? 4 : 2)}</strong>
       </div>
       <h3>${escapeHtml(chunk.heading || "General")}</h3>
       <p>${escapeHtml(chunk.excerpt || "")}</p>
@@ -534,13 +541,26 @@ function updateLocalStatus(reflection) {
   }
   if (reflection.source === "lm-studio") {
     if (reflection.ragUsed) {
-      $("localStatus").textContent = reflection.model ? `Local AI + RAG: ${reflection.model}` : "Local AI + RAG connected";
+      const mode = reflection.ragMode === "vector" ? "Vector RAG" : "Keyword RAG";
+      $("localStatus").textContent = reflection.model ? `Local AI + ${mode}: ${reflection.model}` : `Local AI + ${mode} connected`;
       return;
     }
     $("localStatus").textContent = reflection.model ? `Local AI: ${reflection.model}` : "Local AI connected";
     return;
   }
   $("localStatus").textContent = "Offline fallback";
+}
+
+function getSelectedRagMode() {
+  return document.querySelector('input[name="ragMode"]:checked')?.value || "keyword";
+}
+
+function updateRagModeHint() {
+  const mode = getSelectedRagMode();
+  $("ragModeHint").textContent =
+    mode === "vector"
+      ? "Vector uses local embeddings to match meaning. Build data/vector_index.json before using it."
+      : "Keyword matches exact terms and headings. It is fast and transparent.";
 }
 
 function escapeHtml(value) {
@@ -634,6 +654,9 @@ $("importFile").addEventListener("change", (event) => importHistory(event.target
 $("clearHistoryBtn").addEventListener("click", clearHistory);
 $("keptPromiseBtn").addEventListener("click", () => markPromise("kept"));
 $("missedPromiseBtn").addEventListener("click", () => markPromise("missed"));
+document.querySelectorAll('input[name="ragMode"]').forEach((input) => {
+  input.addEventListener("change", updateRagModeHint);
+});
 $("notes").addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.key === "Enter") {
     reflect();
@@ -644,4 +667,5 @@ $("notes").value = localStorage.getItem("draftNotes") || "";
 $("notes").addEventListener("input", () => localStorage.setItem("draftNotes", $("notes").value));
 renderHistory();
 renderPromiseCheck();
+updateRagModeHint();
 

@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from rag import KNOWLEDGE_DIR, RAG_INDEX_PATH, build_index, format_context, retrieve, save_index
+from vector_rag import VECTOR_INDEX_PATH, retrieve_vector
 
 
 HOST = "127.0.0.1"
@@ -146,7 +147,7 @@ def read_http_error(exc: urllib.error.HTTPError) -> str:
         return str(exc)
 
 
-def get_lm_studio_model_id() -> str:
+def get_lm_studio_chat_model_id() -> str:
     with urllib.request.urlopen(LM_STUDIO_MODELS_URL, timeout=10) as response:
         body = json.loads(response.read().decode("utf-8"))
 
@@ -154,7 +155,24 @@ def get_lm_studio_model_id() -> str:
     if not models:
         raise RuntimeError("LM Studio returned no loaded models from /v1/models.")
 
-    return str(models[0]["id"])
+    model_ids = [str(model.get("id", "")) for model in models]
+    chat_candidates = [
+        model_id
+        for model_id in model_ids
+        if "embed" not in model_id.lower() and "embedding" not in model_id.lower()
+    ]
+    if not chat_candidates:
+        raise RuntimeError(
+            "LM Studio returned models, but none look like a chat model. "
+            f"Loaded models: {', '.join(model_ids)}"
+        )
+
+    preferred = [
+        model_id
+        for model_id in chat_candidates
+        if any(name in model_id.lower() for name in ["gemma", "llama", "mistral", "qwen"])
+    ]
+    return preferred[0] if preferred else chat_candidates[0]
 
 
 def extract_json_object(content: str) -> dict:
@@ -230,9 +248,10 @@ def call_lm_studio(
     previous_promise: str = "",
     previous_promise_status: str = "",
     include_rag_debug: bool = False,
+    rag_mode: str = "keyword",
 ) -> dict:
-    model_id = get_lm_studio_model_id()
-    rag_context, rag_chunks = get_rag_context(notes)
+    model_id = get_lm_studio_chat_model_id()
+    rag_context, rag_chunks = get_rag_context(notes, mode=rag_mode)
     promise_context = ""
     if previous_promise:
         promise_context = (
@@ -276,6 +295,7 @@ def call_lm_studio(
     reflection = normalize_reflection(parsed)
     reflection["model"] = model_id
     reflection["ragUsed"] = bool(rag_context)
+    reflection["ragMode"] = rag_mode
     if include_rag_debug:
         reflection["ragDebug"] = rag_chunks
     return reflection
@@ -293,15 +313,25 @@ def ensure_rag_index() -> None:
     save_index(index)
 
 
-def get_rag_context(query: str) -> tuple[str, list[dict]]:
+def get_rag_context(query: str, mode: str = "keyword") -> tuple[str, list[dict]]:
     ensure_rag_index()
-    chunks = retrieve(query, top_k=3)
+    if mode == "keyword":
+        chunks = retrieve(query, top_k=3)
+    elif mode == "vector":
+        if not VECTOR_INDEX_PATH.exists():
+            raise RuntimeError(
+                "Vector index not found. Run: python scripts/index_knowledge_vectors.py"
+            )
+        chunks = retrieve_vector(query, top_k=3)
+    else:
+        raise RuntimeError(f"Unsupported RAG mode: {mode}")
     debug_chunks = [
         {
             "source": chunk.source,
             "heading": chunk.heading,
             "score": round(chunk.score, 2),
             "excerpt": chunk.text[:360],
+            "mode": mode,
         }
         for chunk in chunks
     ]
@@ -309,7 +339,7 @@ def get_rag_context(query: str) -> tuple[str, list[dict]]:
 
 
 def call_lm_studio_weekly(reflections: list[dict], promise_status: dict) -> dict:
-    model_id = get_lm_studio_model_id()
+    model_id = get_lm_studio_chat_model_id()
     compact_reflections = []
     for item in reflections[-10:]:
         compact_reflections.append(
@@ -428,12 +458,21 @@ class ReflectionHandler(BaseHTTPRequestHandler):
         previous_promise = str(body.get("previousPromise", "")).strip()
         previous_promise_status = str(body.get("previousPromiseStatus", "")).strip()
         include_rag_debug = bool(body.get("includeRagDebug", False))
+        rag_mode = str(body.get("ragMode", "keyword")).strip().lower()
 
         if not notes:
             self.send_json(400, {"error": "Notes are required"})
             return
 
-        self.handle_lm_call(lambda: call_lm_studio(notes, previous_promise, previous_promise_status, include_rag_debug))
+        self.handle_lm_call(
+            lambda: call_lm_studio(
+                notes,
+                previous_promise,
+                previous_promise_status,
+                include_rag_debug,
+                rag_mode,
+            )
+        )
 
     def handle_lm_call(self, callback) -> None:
         try:
@@ -490,6 +529,8 @@ def main() -> None:
     print(f"LM Studio request timeout: {LM_STUDIO_TIMEOUT_SECONDS} seconds")
     if RAG_INDEX_PATH.exists():
         print(f"RAG index loaded: {RAG_INDEX_PATH}")
+    if VECTOR_INDEX_PATH.exists():
+        print(f"Vector index loaded: {VECTOR_INDEX_PATH}")
     server.serve_forever()
 
 
