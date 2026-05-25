@@ -10,6 +10,8 @@ data/exports/
 data/notion-exports/
 data/rag_index.json
 data/vector_index.json
+data/*.db
+data/*.db-*
 
 knowledge/*.md
 !knowledge/README.md

@@ -23,9 +23,12 @@ The app helps you convert rough daily notes into:
 - direct challenge
 - habit cue
 - tomorrow's promise
+- score explanation
 - saved reflection history
+- local goal memory
 - yesterday's promise check
 - weekly pattern review
+- behavior signals for average score, promise follow-through, builder days, and comfort-zone signals
 
 It runs locally with LM Studio and can use your personal Markdown notes through a lightweight RAG layer.
 
@@ -43,7 +46,8 @@ flowchart TD
     G --> H["Local Gemma model"]
     H --> I["Structured reflection JSON"]
     I --> B
-    B --> J["Local browser storage"]
+    B --> J["Local SQLite memory"]
+    B --> K["Browser draft storage"]
 ```
 
 ## Local Model Roles
@@ -355,9 +359,20 @@ Write rough points from your mobile. Messy is fine.
 The browser stores:
 
 - `draftNotes`
-- `reflectionHistory`
-- `promiseStatus`
 - `reflectionCache`
+
+The local Python server stores durable app memory in:
+
+```text
+data/reflection_agent.db
+```
+
+The SQLite database stores:
+
+- saved reflections
+- score explanations
+- goals used for personalization
+- promise status
 
 This is local to the browser profile for:
 
@@ -371,7 +386,20 @@ The repository ignores private/generated files:
 - `data/reflections/`
 - `data/rag_index.json`
 - `data/vector_index.json`
+- `data/*.db`
 - `.env`
+
+Use the Privacy tab in the UI to export or delete local app memory.
+
+## Local API Protection
+
+The server injects a random per-launch session token into the served UI. Browser API calls must send that token in:
+
+```text
+X-Reflection-Agent-Token
+```
+
+API requests with a foreign `Origin` header are rejected. This reduces the risk of another website reading or mutating your local reflection data while the app is running.
 
 ## Learning Path
 
@@ -380,9 +408,11 @@ This project currently teaches:
 - local LLM integration with LM Studio
 - prompt engineering with structured JSON output
 - browser UI and localStorage memory
+- SQLite-backed local memory
 - RAG fundamentals: ingest, chunk, index, retrieve, augment, generate
 - vector RAG with local embeddings
 - promise tracking and weekly pattern analysis
+- privacy controls and score transparency
 
 Next natural upgrade:
 

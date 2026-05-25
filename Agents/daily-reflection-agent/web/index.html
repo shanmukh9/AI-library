@@ -47,120 +47,214 @@
             <button class="secondary" id="clearBtn" type="button">Clear</button>
           </div>
 
-          <div class="rag-mode-control" aria-label="RAG retrieval mode">
-            <p class="section-kicker">RAG mode</p>
-            <div class="segmented-control">
-              <label>
-                <input type="radio" name="ragMode" value="keyword" checked>
-                <span>Keyword</span>
-              </label>
-              <label>
-                <input type="radio" name="ragMode" value="vector">
-                <span>Vector</span>
-              </label>
-            </div>
-            <p class="rag-mode-hint" id="ragModeHint">Keyword matches exact terms and headings. It is fast and transparent.</p>
-          </div>
+          <details class="advanced-panel">
+            <summary>
+              <span>Advanced</span>
+              <small>RAG and debug controls</small>
+            </summary>
 
-          <label class="debug-toggle" for="ragDebugToggle">
-            <input id="ragDebugToggle" type="checkbox">
-            <span>Show RAG debug after reflection</span>
-          </label>
+            <div class="rag-mode-control" aria-label="RAG retrieval mode">
+              <p class="section-kicker">RAG mode</p>
+              <div class="segmented-control">
+                <label>
+                  <input type="radio" name="ragMode" value="keyword" checked>
+                  <span>Keyword</span>
+                </label>
+                <label>
+                  <input type="radio" name="ragMode" value="vector">
+                  <span>Vector</span>
+                </label>
+              </div>
+              <p class="rag-mode-hint" id="ragModeHint">Keyword matches exact terms and headings. It is fast and transparent.</p>
+            </div>
+
+            <label class="debug-toggle" for="ragDebugToggle">
+              <input id="ragDebugToggle" type="checkbox">
+              <span>Show RAG debug after reflection</span>
+            </label>
+          </details>
         </aside>
 
         <section class="output-panel" id="outputPanel" aria-label="Reflection output">
-          <div class="score-band">
-            <div>
-              <p class="eyebrow">Today's signal</p>
-              <div class="score-line"><span id="scoreValue">--</span><span>/100</span></div>
+          <nav class="app-tabs" aria-label="Reflection sections">
+            <button class="tab-button active" data-tab="reflect" type="button">Reflect</button>
+            <button class="tab-button" data-tab="history" type="button">History</button>
+            <button class="tab-button" data-tab="insights" type="button">Insights</button>
+            <button class="tab-button" data-tab="goals" type="button">Goals</button>
+            <button class="tab-button" data-tab="privacy" type="button">Privacy</button>
+          </nav>
+
+          <div class="tab-panel active" id="reflectPanel" data-panel="reflect">
+            <div class="score-band">
+              <div>
+                <p class="eyebrow">Today's signal</p>
+                <div class="score-line"><span id="scoreValue">--</span><span>/100</span></div>
               <p class="score-label" id="scoreLabel">Ready when you are</p>
+              <p class="score-reason" id="scoreReason">Score explanation will appear after reflection.</p>
             </div>
-            <div class="ring" id="scoreRing" aria-hidden="true"></div>
-          </div>
+              <div class="ring" id="scoreRing" aria-hidden="true"></div>
+            </div>
 
-          <article class="reflection-card main-card">
-            <p class="section-kicker">Meaning</p>
-            <h2 id="summaryTitle">A calm review will appear here.</h2>
-            <p id="summaryText">Drop the messy notes. This will compress them into one useful mirror.</p>
-          </article>
-
-          <div class="insight-grid">
-            <article class="reflection-card">
-              <p class="section-kicker">Pattern</p>
-              <p id="patternText">Your repeated signal will show here.</p>
+            <article class="reflection-card main-card">
+              <p class="section-kicker">Meaning</p>
+              <h2 id="summaryTitle">A calm review will appear here.</h2>
+              <p id="summaryText">Drop the messy notes. This will compress them into one useful mirror.</p>
             </article>
 
-            <article class="reflection-card">
-              <p class="section-kicker">Challenge</p>
-              <p id="challengeText">A direct but kind push will show here.</p>
+            <div class="insight-grid">
+              <article class="reflection-card">
+                <p class="section-kicker">Pattern</p>
+                <p id="patternText">Your repeated signal will show here.</p>
+              </article>
+
+              <article class="reflection-card">
+                <p class="section-kicker">Challenge</p>
+                <p id="challengeText">A direct but kind push will show here.</p>
+              </article>
+            </div>
+
+            <article class="action-strip">
+              <div>
+                <p class="section-kicker">Tomorrow's promise</p>
+                <p id="tomorrowText">One small action will show here.</p>
+              </div>
+              <button class="secondary compact" id="saveBtn" type="button">Save</button>
             </article>
+
+            <section class="rag-debug-panel" id="ragDebugPanel" hidden>
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">RAG debug</p>
+                  <h2 id="ragDebugTitle">Knowledge used</h2>
+                </div>
+                <button class="secondary compact" id="hideRagDebugBtn" type="button">Hide</button>
+              </div>
+              <p class="debug-copy">These are the retrieved knowledge chunks added to the local Gemma prompt.</p>
+              <div class="rag-debug-list" id="ragDebugList"></div>
+            </section>
           </div>
 
-          <article class="action-strip">
-            <div>
-              <p class="section-kicker">Tomorrow's promise</p>
-              <p id="tomorrowText">One small action will show here.</p>
-            </div>
-            <button class="secondary compact" id="saveBtn" type="button">Save</button>
-          </article>
+          <div class="tab-panel" id="historyPanelTab" data-panel="history" hidden>
+            <section class="history-panel" aria-label="Saved reflections">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Memory</p>
+                  <h2>Saved reflections</h2>
+                </div>
+                <div class="history-actions">
+                  <button class="secondary compact" id="exportBtn" type="button">Export</button>
+                  <label class="secondary compact file-label" for="importFile">Import</label>
+                  <input id="importFile" type="file" accept="application/json">
+                  <button class="secondary compact danger" id="clearHistoryBtn" type="button">Clear</button>
+                </div>
+              </div>
+              <div class="history-summary" id="historySummary">No saved reflections yet. Save one to start building memory.</div>
+              <div class="history-list" id="historyList"></div>
+            </section>
+          </div>
 
-          <section class="rag-debug-panel" id="ragDebugPanel" hidden>
-            <div class="panel-heading">
-              <div>
-                <p class="section-kicker">RAG debug</p>
-                <h2 id="ragDebugTitle">Knowledge used</h2>
+          <div class="tab-panel" id="insightsPanel" data-panel="insights" hidden>
+            <section class="analytics-panel" aria-label="Behavior signals">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Behavior signals</p>
+                  <h2>Useful trends, not vanity stats.</h2>
+                </div>
+                <button class="secondary compact" id="refreshAnalyticsBtn" type="button">Refresh</button>
               </div>
-              <button class="secondary compact" id="hideRagDebugBtn" type="button">Hide</button>
-            </div>
-            <p class="debug-copy">These are the retrieved knowledge chunks added to the local Gemma prompt.</p>
-            <div class="rag-debug-list" id="ragDebugList"></div>
-          </section>
+              <div class="metric-grid">
+                <article>
+                  <strong id="metricAverage">--</strong>
+                  <span>14-day average</span>
+                </article>
+                <article>
+                  <strong id="metricPromise">--</strong>
+                  <span>promise kept rate</span>
+                </article>
+                <article>
+                  <strong id="metricBuilder">--</strong>
+                  <span>builder days</span>
+                </article>
+                <article>
+                  <strong id="metricComfort">--</strong>
+                  <span>comfort signals</span>
+                </article>
+              </div>
+            </section>
 
-          <section class="weekly-panel" aria-label="Weekly pattern review">
-            <div class="panel-heading">
-              <div>
-                <p class="section-kicker">Weekly analyst</p>
-                <h2 id="weeklyTitle">Understand who you are becoming.</h2>
+            <section class="weekly-panel" aria-label="Weekly pattern review">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Weekly analyst</p>
+                  <h2 id="weeklyTitle">Understand who you are becoming.</h2>
+                </div>
+                <button class="primary compact" id="weeklyBtn" type="button">Review week</button>
               </div>
-              <button class="primary compact" id="weeklyBtn" type="button">Review week</button>
-            </div>
-            <p class="weekly-intro" id="weeklySummary">Save at least two reflections, then generate a weekly pattern review.</p>
-            <div class="weekly-grid">
-              <article>
-                <p class="section-kicker">Repeated pattern</p>
-                <p id="weeklyPattern">Your strongest repeated signal will appear here.</p>
-              </article>
-              <article>
-                <p class="section-kicker">Builder signal</p>
-                <p id="weeklyBuilder">Your AI builder proof will appear here.</p>
-              </article>
-              <article>
-                <p class="section-kicker">Comfort zone</p>
-                <p id="weeklyComfort">Avoidance or friction will appear here.</p>
-              </article>
-              <article>
-                <p class="section-kicker">7-day experiment</p>
-                <p id="weeklyExperiment">One small experiment will appear here.</p>
-              </article>
-            </div>
-          </section>
+              <p class="weekly-intro" id="weeklySummary">Save at least two reflections, then generate a weekly pattern review.</p>
+              <div class="weekly-grid">
+                <article>
+                  <p class="section-kicker">Repeated pattern</p>
+                  <p id="weeklyPattern">Your strongest repeated signal will appear here.</p>
+                </article>
+                <article>
+                  <p class="section-kicker">Builder signal</p>
+                  <p id="weeklyBuilder">Your AI builder proof will appear here.</p>
+                </article>
+                <article>
+                  <p class="section-kicker">Comfort zone</p>
+                  <p id="weeklyComfort">Avoidance or friction will appear here.</p>
+                </article>
+                <article>
+                  <p class="section-kicker">7-day experiment</p>
+                  <p id="weeklyExperiment">One small experiment will appear here.</p>
+                </article>
+              </div>
+            </section>
+          </div>
 
-          <section class="history-panel" aria-label="Saved reflections">
-            <div class="panel-heading">
-              <div>
-                <p class="section-kicker">Memory</p>
-                <h2>Saved reflections</h2>
+          <div class="tab-panel" id="goalsPanel" data-panel="goals" hidden>
+            <section class="goals-panel" aria-label="Growth goals">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Personalization</p>
+                  <h2>Goals the agent should remember.</h2>
+                </div>
+                <button class="primary compact" id="saveGoalsBtn" type="button">Save goals</button>
               </div>
-              <div class="history-actions">
-                <button class="secondary compact" id="exportBtn" type="button">Export</button>
-                <label class="secondary compact file-label" for="importFile">Import</label>
-                <input id="importFile" type="file" accept="application/json">
-                <button class="secondary compact danger" id="clearHistoryBtn" type="button">Clear</button>
+              <p class="panel-copy">Keep these few and honest. They are sent to the local model with each reflection so the answer has direction.</p>
+              <div class="goal-list" id="goalList"></div>
+              <button class="secondary compact" id="addGoalBtn" type="button">Add goal</button>
+            </section>
+          </div>
+
+          <div class="tab-panel" id="privacyPanel" data-panel="privacy" hidden>
+            <section class="privacy-panel" aria-label="Privacy and data controls">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Local data</p>
+                  <h2>You control the memory.</h2>
+                </div>
               </div>
-            </div>
-            <div class="history-summary" id="historySummary">No saved reflections yet. Save one to start building memory.</div>
-            <div class="history-list" id="historyList"></div>
-          </section>
+              <div class="privacy-grid">
+                <article>
+                  <p class="section-kicker">Stored locally</p>
+                  <p>Reflections, goals, promise status, and generated summaries are stored in a local SQLite database under this project folder.</p>
+                </article>
+                <article>
+                  <p class="section-kicker">Model boundary</p>
+                  <p>Daily notes are sent only to the LM Studio server running on localhost when you use local AI mode.</p>
+                </article>
+                <article>
+                  <p class="section-kicker">Not stored by default</p>
+                  <p>RAG debug chunks are displayed only when enabled. Keep debug off for normal daily use.</p>
+                </article>
+              </div>
+              <div class="privacy-actions">
+                <button class="secondary" id="exportAllBtn" type="button">Export local data</button>
+                <button class="secondary danger" id="clearAllBtn" type="button">Delete local data</button>
+              </div>
+            </section>
+          </div>
         </section>
       </section>
     </main>

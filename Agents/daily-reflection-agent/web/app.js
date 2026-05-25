@@ -24,7 +24,14 @@
 const comfortWords = ["watched", "scroll", "scrolled", "thinking", "thought", "planning", "plan", "maybe", "later", "course", "video", "podcast"];
 const actionWords = ["built", "created", "finished", "completed", "shipped", "wrote", "coded", "practiced", "exercised", "walked", "ran", "read", "called", "shared", "cleaned", "prepared"];
 const $ = (id) => document.getElementById(id);
+const sessionToken = window.__REFLECTION_AGENT_TOKEN__ || "";
 let currentReflection = null;
+let currentReflectionId = null;
+let currentGoals = [];
+
+function hasServer() {
+  return window.location.protocol !== "file:";
+}
 
 function wordsFor(text) {
   return new Set((text.toLowerCase().match(/[a-z]+/g) || []));
@@ -176,6 +183,11 @@ function buildReflection(text) {
     pattern: keyPattern(buckets, details),
     challenge: `${challenge(buckets, details)} ${habitCue(buckets, details)}`,
     tomorrow: tomorrowAction(buckets),
+    scoreReason: `Score reflects ${details.coveredDomains} growth areas, ${details.actionHits} action signals, and ${details.comfortHits} comfort-zone signals.`,
+    builderSignal: Boolean(buckets["AI Career and Building"].length),
+    fitnessSignal: Boolean(buckets["Fitness and Energy"].length),
+    comfortSignal: details.comfortHits > details.actionHits,
+    emotionalSignal: Boolean(buckets["Mental Strength and Emotion"].length),
     source: "offline"
   };
 }
@@ -189,18 +201,25 @@ function normalizeReflection(reflection) {
     pattern: reflection.pattern || "",
     challenge: reflection.challenge || "",
     tomorrow: reflection.tomorrow || "Choose one small promise for tomorrow.",
+    scoreReason: reflection.scoreReason || "Score reflects effort, output, recovery, consistency, and promise follow-through.",
     source: reflection.source || "lm-studio",
     model: reflection.model || "",
     ragMode: reflection.ragMode || getSelectedRagMode(),
     ragUsed: Boolean(reflection.ragUsed),
-    ragDebug: Array.isArray(reflection.ragDebug) ? reflection.ragDebug : []
+    ragDebug: Array.isArray(reflection.ragDebug) ? reflection.ragDebug : [],
+    builderSignal: Boolean(reflection.builderSignal),
+    fitnessSignal: Boolean(reflection.fitnessSignal),
+    comfortSignal: Boolean(reflection.comfortSignal),
+    emotionalSignal: Boolean(reflection.emotionalSignal)
   };
 }
 
 function render(reflection) {
   currentReflection = normalizeReflection(reflection);
+  setActiveTab("reflect");
   $("scoreValue").textContent = currentReflection.score;
   $("scoreLabel").textContent = currentReflection.label;
+  $("scoreReason").textContent = currentReflection.scoreReason;
   $("summaryTitle").textContent = currentReflection.title;
   $("summaryText").textContent = currentReflection.summary;
   $("patternText").textContent = currentReflection.pattern;
@@ -231,6 +250,34 @@ function setCache(hash, reflection) {
   localStorage.setItem("reflectionCache", JSON.stringify(Object.fromEntries(entries)));
 }
 
+async function apiGet(path) {
+  const response = await fetch(path, {
+    headers: {
+      "X-Reflection-Agent-Token": sessionToken
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function apiPost(path, payload) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Reflection-Agent-Token": sessionToken
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Request failed: ${response.status}`);
+  }
+  return response.json();
+}
+
 async function buildAiReflection(text) {
   const previous = previousReflectionForPromise();
   const promiseStatus = previous ? getPromiseStatus()[previous.id] || "" : "";
@@ -245,14 +292,16 @@ async function buildAiReflection(text) {
   const response = await fetch("/api/reflect", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "X-Reflection-Agent-Token": sessionToken
     },
     body: JSON.stringify({
       notes: text,
       previousPromise: previous?.tomorrow || "",
       previousPromiseStatus: promiseStatus,
       includeRagDebug,
-      ragMode
+      ragMode,
+      goals: currentGoals
     })
   });
 
@@ -278,7 +327,8 @@ async function buildWeeklyReview() {
   const response = await fetch("/api/weekly", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "X-Reflection-Agent-Token": sessionToken
     },
     body: JSON.stringify({
       reflections: history,
@@ -324,26 +374,54 @@ function formatDate(value) {
   }).format(new Date(value));
 }
 
-function saveReflection() {
+async function saveReflection(options = {}) {
   if (!currentReflection || $("scoreValue").textContent === "--") {
     $("notes").focus();
     return;
   }
 
   const payload = {
-    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
+    id: currentReflectionId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
     date: new Date().toISOString(),
     day: todayKey(),
     notes: $("notes").value,
     ...currentReflection
   };
-  const history = getHistory();
-  history.push(payload);
-  setHistory(history);
-  renderHistory();
-  renderPromiseCheck();
-  $("saveBtn").textContent = "Saved";
-  window.setTimeout(() => ($("saveBtn").textContent = "Save"), 1100);
+  $("saveBtn").disabled = true;
+  try {
+    if (hasServer()) {
+      const saved = await apiPost("/api/reflections", payload);
+      const history = getHistory();
+      const savedReflection = saved.reflection || payload;
+      currentReflectionId = savedReflection.id;
+      const existingIndex = history.findIndex((item) => item.id === savedReflection.id);
+      if (existingIndex >= 0) {
+        history[existingIndex] = savedReflection;
+      } else {
+        history.push(savedReflection);
+      }
+      setHistory(history);
+      await loadAnalytics();
+    } else {
+      const history = getHistory();
+      currentReflectionId = payload.id;
+      const existingIndex = history.findIndex((item) => item.id === payload.id);
+      if (existingIndex >= 0) {
+        history[existingIndex] = payload;
+      } else {
+        history.push(payload);
+      }
+      setHistory(history);
+    }
+    renderHistory();
+    renderPromiseCheck();
+    $("saveBtn").textContent = options.automatic ? "Auto-saved" : "Saved";
+  } catch (error) {
+    $("saveBtn").textContent = "Save failed";
+  } finally {
+    $("saveBtn").disabled = false;
+    window.setTimeout(() => ($("saveBtn").textContent = "Save"), 1200);
+  }
 }
 
 function renderHistory() {
@@ -391,12 +469,20 @@ function renderPromiseCheck() {
   $("missedPromiseBtn").classList.toggle("selected", status === "missed");
 }
 
-function markPromise(status) {
+async function markPromise(status) {
   const previous = previousReflectionForPromise();
   if (!previous) return;
   const promiseStatus = getPromiseStatus();
   promiseStatus[previous.id] = status;
   setPromiseStatus(promiseStatus);
+  if (hasServer()) {
+    try {
+      await apiPost("/api/promise", { reflectionId: previous.id, status });
+      await loadAnalytics();
+    } catch (error) {
+      $("localStatus").textContent = "Promise saved in browser only";
+    }
+  }
   renderPromiseCheck();
 }
 
@@ -426,6 +512,25 @@ function exportHistory() {
   URL.revokeObjectURL(url);
 }
 
+async function exportAllData() {
+  if (hasServer()) {
+    const payload = await apiGet("/api/privacy/export");
+    downloadJson(payload, `daily-reflection-agent-export-${todayKey()}.json`);
+    return;
+  }
+  exportHistory();
+}
+
+function downloadJson(payload, filename) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 async function importHistory(file) {
   if (!file) return;
   const text = await file.text();
@@ -449,6 +554,23 @@ function clearHistory() {
   renderHistory();
   renderPromiseCheck();
   renderWeeklyPlaceholder();
+}
+
+async function clearAllData() {
+  const confirmed = window.confirm("Delete all local reflections, goals, promise status, and cache for this app?");
+  if (!confirmed) return;
+  if (hasServer()) {
+    await apiPost("/api/privacy/clear", {});
+  }
+  localStorage.removeItem("reflectionHistory");
+  localStorage.removeItem("promiseStatus");
+  localStorage.removeItem("reflectionCache");
+  currentGoals = [];
+  renderHistory();
+  renderPromiseCheck();
+  renderGoals();
+  renderWeeklyPlaceholder();
+  renderAnalyticsPlaceholder();
 }
 
 function buildWeeklyFallback(history) {
@@ -501,6 +623,139 @@ function renderWeeklyPlaceholder() {
   $("weeklyBuilder").textContent = "Your AI builder proof will appear here.";
   $("weeklyComfort").textContent = "Avoidance or friction will appear here.";
   $("weeklyExperiment").textContent = "One small experiment will appear here.";
+}
+
+function renderAnalyticsPlaceholder() {
+  $("metricAverage").textContent = "--";
+  $("metricPromise").textContent = "--";
+  $("metricBuilder").textContent = "--";
+  $("metricComfort").textContent = "--";
+}
+
+function renderAnalytics(analytics) {
+  $("metricAverage").textContent = analytics.reflectionCount ? `${analytics.averageScore}/100` : "--";
+  $("metricPromise").textContent = analytics.promiseRate ? `${analytics.promiseRate}%` : "--";
+  $("metricBuilder").textContent = analytics.reflectionCount ? String(analytics.builderDays) : "--";
+  $("metricComfort").textContent = analytics.reflectionCount ? String(analytics.comfortDays) : "--";
+}
+
+async function loadAnalytics() {
+  if (!hasServer()) {
+    renderAnalytics(buildLocalAnalytics());
+    return;
+  }
+  try {
+    const payload = await apiGet("/api/analytics");
+    renderAnalytics(payload.analytics);
+  } catch (error) {
+    renderAnalytics(buildLocalAnalytics());
+  }
+}
+
+function buildLocalAnalytics() {
+  const history = getHistory().slice(-14);
+  if (!history.length) {
+    return { reflectionCount: 0, averageScore: 0, promiseRate: 0, builderDays: 0, comfortDays: 0 };
+  }
+  const textItems = history.map((item) => `${item.notes || ""} ${item.summary || ""} ${item.pattern || ""}`.toLowerCase());
+  return {
+    reflectionCount: history.length,
+    averageScore: Math.round(history.reduce((sum, item) => sum + Number(item.score || 0), 0) / history.length),
+    promiseRate: 0,
+    builderDays: textItems.filter((text) => /\b(ai|agent|code|github|project|build)\b/.test(text)).length,
+    comfortDays: textItems.filter((text) => /\b(comfort|avoid|later|scroll|watched|video|course)\b/.test(text)).length
+  };
+}
+
+function renderGoals() {
+  const list = $("goalList");
+  list.innerHTML = "";
+  if (!currentGoals.length) {
+    currentGoals = [
+      { area: "AI career", target: "Create visible AI project proof every week." },
+      { area: "Fitness", target: "Protect energy with simple movement and recovery." },
+      { area: "Discipline", target: "Turn intentions into small finished reps." }
+    ];
+  }
+  currentGoals.forEach((goal, index) => {
+    const item = document.createElement("article");
+    item.className = "goal-item";
+    item.innerHTML = `
+      <label>Area
+        <input data-goal-area="${index}" value="${escapeHtml(goal.area || "")}" maxlength="80">
+      </label>
+      <label>Target
+        <input data-goal-target="${index}" value="${escapeHtml(goal.target || "")}" maxlength="300">
+      </label>
+      <button class="secondary compact danger" data-remove-goal="${index}" type="button">Remove</button>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function readGoalsFromUi() {
+  return currentGoals
+    .map((goal, index) => ({
+      id: goal.id,
+      area: document.querySelector(`[data-goal-area="${index}"]`)?.value.trim() || "",
+      target: document.querySelector(`[data-goal-target="${index}"]`)?.value.trim() || ""
+    }))
+    .filter((goal) => goal.area && goal.target);
+}
+
+async function loadGoals() {
+  if (hasServer()) {
+    try {
+      const payload = await apiGet("/api/goals");
+      currentGoals = payload.goals || [];
+    } catch (error) {
+      currentGoals = JSON.parse(localStorage.getItem("reflectionGoals") || "[]");
+    }
+  } else {
+    currentGoals = JSON.parse(localStorage.getItem("reflectionGoals") || "[]");
+  }
+  renderGoals();
+}
+
+async function saveGoals() {
+  currentGoals = readGoalsFromUi();
+  if (hasServer()) {
+    try {
+      const payload = await apiPost("/api/goals", { goals: currentGoals });
+      currentGoals = payload.goals || currentGoals;
+    } catch (error) {
+      $("localStatus").textContent = "Goals saved in browser only";
+    }
+  }
+  localStorage.setItem("reflectionGoals", JSON.stringify(currentGoals));
+  renderGoals();
+  $("saveGoalsBtn").textContent = "Saved";
+  window.setTimeout(() => ($("saveGoalsBtn").textContent = "Save goals"), 1100);
+}
+
+async function loadServerMemory() {
+  if (!hasServer()) {
+    renderHistory();
+    renderPromiseCheck();
+    await loadGoals();
+    await loadAnalytics();
+    return;
+  }
+  try {
+    const payload = await apiGet("/api/reflections");
+    if (Array.isArray(payload.reflections)) {
+      setHistory(payload.reflections.slice().reverse());
+    }
+    if (payload.promiseStatus) {
+      setPromiseStatus(payload.promiseStatus);
+    }
+  } catch (error) {
+    $("localStatus").textContent = "Browser memory only";
+  }
+  renderHistory();
+  renderPromiseCheck();
+  await loadGoals();
+  await loadAnalytics();
 }
 
 function renderRagDebug(chunks) {
@@ -563,6 +818,20 @@ function updateRagModeHint() {
       : "Keyword matches exact terms and headings. It is fast and transparent.";
 }
 
+function setActiveTab(tabName) {
+  document.querySelectorAll(".tab-button").forEach((button) => {
+    const isActive = button.dataset.tab === tabName;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    const isActive = panel.dataset.panel === tabName;
+    panel.classList.toggle("active", isActive);
+    panel.hidden = !isActive;
+  });
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -581,6 +850,8 @@ async function reflect() {
 
   $("reflectBtn").disabled = true;
   $("reflectBtn").textContent = "Reflecting...";
+  currentReflectionId = null;
+  setLoadingState(true);
 
   try {
     if (window.location.protocol === "file:") {
@@ -588,15 +859,31 @@ async function reflect() {
     } else {
       render(await buildAiReflection(text));
     }
+    await saveReflection({ automatic: true });
   } catch (error) {
     const fallback = buildReflection(text);
     fallback.label = "Offline fallback";
     fallback.title = "Local AI was not reachable, so I used the built-in reflection.";
-    fallback.summary = `${fallback.summary} Reason: ${error.message}`;
+    fallback.summary = `${fallback.summary} The local model call failed, but your notes were still converted into a basic local reflection.`;
     render(fallback);
+    await saveReflection({ automatic: true });
   } finally {
+    setLoadingState(false);
     $("reflectBtn").disabled = false;
     $("reflectBtn").textContent = "Reflect";
+  }
+}
+
+function setLoadingState(isLoading) {
+  document.body.classList.toggle("is-reflecting", isLoading);
+  if (isLoading) {
+    $("scoreLabel").textContent = "Local model is thinking...";
+    $("scoreReason").textContent = "Retrieving memory, reading goals, and preparing the reflection.";
+    $("summaryTitle").textContent = "Building your reflection...";
+    $("summaryText").textContent = "";
+    $("patternText").textContent = "";
+    $("challengeText").textContent = "";
+    $("tomorrowText").textContent = "";
   }
 }
 
@@ -645,15 +932,33 @@ $("clearBtn").addEventListener("click", () => {
 });
 $("saveBtn").addEventListener("click", saveReflection);
 $("weeklyBtn").addEventListener("click", reviewWeek);
+$("refreshAnalyticsBtn").addEventListener("click", loadAnalytics);
 $("hideRagDebugBtn").addEventListener("click", () => {
   $("ragDebugPanel").hidden = true;
   $("ragDebugToggle").checked = false;
 });
 $("exportBtn").addEventListener("click", exportHistory);
+$("exportAllBtn").addEventListener("click", exportAllData);
+$("clearAllBtn").addEventListener("click", clearAllData);
+$("saveGoalsBtn").addEventListener("click", saveGoals);
+$("addGoalBtn").addEventListener("click", () => {
+  currentGoals = readGoalsFromUi();
+  currentGoals.push({ area: "", target: "" });
+  renderGoals();
+});
+$("goalList").addEventListener("click", (event) => {
+  const removeIndex = event.target.dataset.removeGoal;
+  if (removeIndex === undefined) return;
+  currentGoals = readGoalsFromUi().filter((_, index) => index !== Number(removeIndex));
+  renderGoals();
+});
 $("importFile").addEventListener("change", (event) => importHistory(event.target.files[0]));
 $("clearHistoryBtn").addEventListener("click", clearHistory);
 $("keptPromiseBtn").addEventListener("click", () => markPromise("kept"));
 $("missedPromiseBtn").addEventListener("click", () => markPromise("missed"));
+document.querySelectorAll(".tab-button").forEach((button) => {
+  button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+});
 document.querySelectorAll('input[name="ragMode"]').forEach((input) => {
   input.addEventListener("change", updateRagModeHint);
 });
@@ -665,7 +970,6 @@ $("notes").addEventListener("keydown", (event) => {
 
 $("notes").value = localStorage.getItem("draftNotes") || "";
 $("notes").addEventListener("input", () => localStorage.setItem("draftNotes", $("notes").value));
-renderHistory();
-renderPromiseCheck();
 updateRagModeHint();
+loadServerMemory();
 
