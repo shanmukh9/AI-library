@@ -204,6 +204,7 @@ function normalizeReflection(reflection) {
     scoreReason: reflection.scoreReason || "Score reflects effort, output, recovery, consistency, and promise follow-through.",
     source: reflection.source || "lm-studio",
     model: reflection.model || "",
+    reflectionDepth: reflection.reflectionDepth || getSelectedReflectionDepth(),
     ragMode: reflection.ragMode || getSelectedRagMode(),
     ragUsed: Boolean(reflection.ragUsed),
     ragDebug: Array.isArray(reflection.ragDebug) ? reflection.ragDebug : [],
@@ -283,7 +284,8 @@ async function buildAiReflection(text) {
   const promiseStatus = previous ? getPromiseStatus()[previous.id] || "" : "";
   const includeRagDebug = $("ragDebugToggle").checked;
   const ragMode = getSelectedRagMode();
-  const hash = notesHash(`${text}|${previous?.tomorrow || ""}|${promiseStatus}|${ragMode}`);
+  const reflectionDepth = getSelectedReflectionDepth();
+  const hash = notesHash(`${text}|${previous?.tomorrow || ""}|${promiseStatus}|${ragMode}|${reflectionDepth}`);
   const cache = getCache();
   if (!includeRagDebug && cache[hash]) {
     return { ...cache[hash], label: `${cache[hash].label} · cached` };
@@ -301,6 +303,7 @@ async function buildAiReflection(text) {
       previousPromiseStatus: promiseStatus,
       includeRagDebug,
       ragMode,
+      reflectionDepth,
       goals: currentGoals
     })
   });
@@ -797,10 +800,12 @@ function updateLocalStatus(reflection) {
   if (reflection.source === "lm-studio") {
     if (reflection.ragUsed) {
       const mode = reflection.ragMode === "vector" ? "Vector RAG" : "Keyword RAG";
-      $("localStatus").textContent = reflection.model ? `Local AI + ${mode}: ${reflection.model}` : `Local AI + ${mode} connected`;
+      const depth = reflection.reflectionDepth === "fast" ? "Fast" : "Deep";
+      $("localStatus").textContent = reflection.model ? `${depth} local AI + ${mode}: ${reflection.model}` : `${depth} local AI + ${mode} connected`;
       return;
     }
-    $("localStatus").textContent = reflection.model ? `Local AI: ${reflection.model}` : "Local AI connected";
+    const depth = reflection.reflectionDepth === "fast" ? "Fast" : "Deep";
+    $("localStatus").textContent = reflection.model ? `${depth} local AI: ${reflection.model}` : `${depth} local AI connected`;
     return;
   }
   $("localStatus").textContent = "Offline fallback";
@@ -810,12 +815,24 @@ function getSelectedRagMode() {
   return document.querySelector('input[name="ragMode"]:checked')?.value || "keyword";
 }
 
+function getSelectedReflectionDepth() {
+  return document.querySelector('input[name="reflectionDepth"]:checked')?.value || "fast";
+}
+
 function updateRagModeHint() {
   const mode = getSelectedRagMode();
   $("ragModeHint").textContent =
     mode === "vector"
       ? "Vector uses local embeddings to match meaning. Build data/vector_index.json before using it."
       : "Keyword matches exact terms and headings. It is fast and transparent.";
+}
+
+function updateReflectionDepthHint() {
+  const mode = getSelectedReflectionDepth();
+  $("reflectionDepthHint").textContent =
+    mode === "fast"
+      ? "Fast skips extra context and asks for a tighter answer. Use it for daily logging."
+      : "Deep uses RAG, goals, and recent history. Better insight, slower generation.";
 }
 
 function setActiveTab(tabName) {
@@ -876,15 +893,27 @@ async function reflect() {
 
 function setLoadingState(isLoading) {
   document.body.classList.toggle("is-reflecting", isLoading);
+  $("loadingBanner").hidden = !isLoading;
   if (isLoading) {
     $("scoreLabel").textContent = "Local model is thinking...";
-    $("scoreReason").textContent = "Retrieving memory, reading goals, and preparing the reflection.";
+    $("scoreReason").textContent =
+      getSelectedReflectionDepth() === "fast"
+        ? "Using a compact prompt for a faster daily reflection."
+        : "Retrieving memory, reading goals, and preparing the reflection.";
     $("summaryTitle").textContent = "Building your reflection...";
-    $("summaryText").textContent = "";
-    $("patternText").textContent = "";
-    $("challengeText").textContent = "";
-    $("tomorrowText").textContent = "";
+    $("summaryText").innerHTML = skeletonLines(["medium", "", "short"]);
+    $("patternText").innerHTML = skeletonLines(["", "medium"]);
+    $("challengeText").innerHTML = skeletonLines(["", "short"]);
+    $("tomorrowText").innerHTML = skeletonLines(["medium"]);
   }
+}
+
+function skeletonLines(widths) {
+  return `
+    <span class="skeleton-lines" aria-hidden="true">
+      ${widths.map((width) => `<span class="skeleton-line ${width}"></span>`).join("")}
+    </span>
+  `;
 }
 
 async function reviewWeek() {
@@ -962,6 +991,9 @@ document.querySelectorAll(".tab-button").forEach((button) => {
 document.querySelectorAll('input[name="ragMode"]').forEach((input) => {
   input.addEventListener("change", updateRagModeHint);
 });
+document.querySelectorAll('input[name="reflectionDepth"]').forEach((input) => {
+  input.addEventListener("change", updateReflectionDepthHint);
+});
 $("notes").addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.key === "Enter") {
     reflect();
@@ -971,5 +1003,6 @@ $("notes").addEventListener("keydown", (event) => {
 $("notes").value = localStorage.getItem("draftNotes") || "";
 $("notes").addEventListener("input", () => localStorage.setItem("draftNotes", $("notes").value));
 updateRagModeHint();
+updateReflectionDepthHint();
 loadServerMemory();
 

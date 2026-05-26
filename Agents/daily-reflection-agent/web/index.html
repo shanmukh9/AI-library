@@ -50,8 +50,23 @@
           <details class="advanced-panel">
             <summary>
               <span>Advanced</span>
-              <small>RAG and debug controls</small>
+              <small>speed, RAG, and debug controls</small>
             </summary>
+
+            <div class="rag-mode-control" aria-label="Reflection depth">
+              <p class="section-kicker">Reflection depth</p>
+              <div class="segmented-control">
+                <label>
+                  <input type="radio" name="reflectionDepth" value="fast" checked>
+                  <span>Fast</span>
+                </label>
+                <label>
+                  <input type="radio" name="reflectionDepth" value="deep">
+                  <span>Deep</span>
+                </label>
+              </div>
+              <p class="rag-mode-hint" id="reflectionDepthHint">Fast skips extra context and asks for a tighter answer. Use it for daily logging.</p>
+            </div>
 
             <div class="rag-mode-control" aria-label="RAG retrieval mode">
               <p class="section-kicker">RAG mode</p>
@@ -85,6 +100,14 @@
           </nav>
 
           <div class="tab-panel active" id="reflectPanel" data-panel="reflect">
+            <div class="loading-banner" id="loadingBanner" hidden>
+              <div class="loading-spinner" aria-hidden="true"></div>
+              <div>
+                <p class="section-kicker">Reflecting</p>
+                <p>Reading your notes, goals, memory, and local knowledge.</p>
+              </div>
+            </div>
+
             <div class="score-band">
               <div>
                 <p class="eyebrow">Today's signal</p>
