@@ -438,6 +438,7 @@ button:disabled {
 .score-band,
 .reflection-card,
 .action-strip,
+.review-panel,
 .rag-debug-panel,
 .weekly-panel,
 .history-panel,
@@ -643,6 +644,52 @@ button:disabled {
   padding: 22px;
   border-color: rgba(23, 180, 92, 0.18);
   background: linear-gradient(135deg, var(--mint-strong), #ffffff);
+}
+
+.review-panel {
+  padding: 22px;
+}
+
+.review-panel[hidden] {
+  display: none;
+}
+
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.review-answer {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: linear-gradient(135deg, #ffffff, var(--mint));
+}
+
+.review-answer[hidden] {
+  display: none;
+}
+
+.review-answer h3 {
+  margin: 0 0 8px;
+  font-size: 1.08rem;
+}
+
+.review-answer p {
+  margin: 0;
+  color: #3f443d;
+  line-height: 1.55;
+}
+
+.next-step {
+  margin-top: 12px !important;
+  border-left: 4px solid var(--clay);
+  padding-left: 12px;
+  color: var(--ink) !important;
+  font-weight: 680;
 }
 
 .history-panel {

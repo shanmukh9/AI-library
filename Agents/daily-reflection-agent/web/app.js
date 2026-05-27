@@ -227,6 +227,8 @@ function render(reflection) {
   $("challengeText").textContent = currentReflection.challenge;
   $("tomorrowText").textContent = currentReflection.tomorrow;
   $("scoreRing").style.background = `conic-gradient(var(--sage) ${currentReflection.score * 3.6}deg, #e9e3d5 0deg)`;
+  $("reviewPanel").hidden = false;
+  $("reviewAnswer").hidden = true;
   updateLocalStatus(currentReflection);
   renderRagDebug(currentReflection.ragDebug);
 }
@@ -670,6 +672,71 @@ function buildLocalAnalytics() {
   };
 }
 
+function buildFollowupFallback(followupType) {
+  const tomorrow = currentReflection?.tomorrow || "Choose one small action tomorrow.";
+  if (followupType === "challenge_excuse") {
+    return {
+      title: "Name the negotiation",
+      answer: "The likely excuse is that the task needs a perfect mood, long time block, or more clarity before starting. Treat that as the comfort-zone story, not the truth. Your job is to begin badly and briefly, then let momentum decide.",
+      nextStep: "Set a 5-minute timer and start the smallest visible version."
+    };
+  }
+  if (followupType === "watch_pattern") {
+    return {
+      title: "Watch the first avoidance move",
+      answer: "Tomorrow, pay attention to the moment you switch from action into preparation, scrolling, or learning about the work instead of touching the work. That first switch is the pattern worth catching.",
+      nextStep: "Write one sentence before opening any learning content."
+    };
+  }
+  return {
+    title: "Make it tiny enough to start",
+    answer: `Do not treat tomorrow's promise as a project. Treat it as a starting ritual: open the place where the work happens, remove one friction point, and complete the first visible move.`,
+    nextStep: tomorrow.length > 120 ? "Do the first 5 minutes of tomorrow's promise." : tomorrow
+  };
+}
+
+async function runFollowup(followupType) {
+  if (!currentReflection) {
+    $("notes").focus();
+    return;
+  }
+
+  const buttons = document.querySelectorAll("[data-followup]");
+  buttons.forEach((button) => {
+    button.disabled = true;
+  });
+  $("reviewPanel").hidden = false;
+  $("reviewAnswer").hidden = false;
+  $("reviewTitle").textContent = "Thinking with today's reflection...";
+  $("reviewText").innerHTML = skeletonLines(["", "medium"]);
+  $("reviewNextStep").textContent = "";
+
+  try {
+    const result = hasServer()
+      ? await apiPost("/api/followup", {
+          notes: $("notes").value,
+          reflection: currentReflection,
+          followupType,
+          goals: currentGoals
+        })
+      : buildFollowupFallback(followupType);
+    renderFollowup(result);
+  } catch (error) {
+    renderFollowup(buildFollowupFallback(followupType));
+  } finally {
+    buttons.forEach((button) => {
+      button.disabled = false;
+    });
+  }
+}
+
+function renderFollowup(result) {
+  $("reviewAnswer").hidden = false;
+  $("reviewTitle").textContent = result.title || "Make it actionable";
+  $("reviewText").textContent = result.answer || "";
+  $("reviewNextStep").textContent = result.nextStep ? `Next step: ${result.nextStep}` : "";
+}
+
 function renderGoals() {
   const list = $("goalList");
   list.innerHTML = "";
@@ -980,6 +1047,11 @@ $("goalList").addEventListener("click", (event) => {
   if (removeIndex === undefined) return;
   currentGoals = readGoalsFromUi().filter((_, index) => index !== Number(removeIndex));
   renderGoals();
+});
+$("reviewPanel").addEventListener("click", (event) => {
+  const followupType = event.target.dataset.followup;
+  if (!followupType) return;
+  runFollowup(followupType);
 });
 $("importFile").addEventListener("change", (event) => importHistory(event.target.files[0]));
 $("clearHistoryBtn").addEventListener("click", clearHistory);

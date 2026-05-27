@@ -144,6 +144,26 @@
               <button class="secondary compact" id="saveBtn" type="button">Save</button>
             </article>
 
+            <section class="review-panel" id="reviewPanel" hidden>
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Review mode</p>
+                  <h2>Turn this into action.</h2>
+                </div>
+              </div>
+              <div class="review-actions">
+                <button class="secondary compact" data-followup="tiny_steps" type="button">Tiny steps</button>
+                <button class="secondary compact" data-followup="challenge_excuse" type="button">Challenge excuse</button>
+                <button class="secondary compact" data-followup="watch_pattern" type="button">Watch pattern</button>
+              </div>
+              <article class="review-answer" id="reviewAnswer" hidden>
+                <p class="section-kicker">Coach note</p>
+                <h3 id="reviewTitle">Make it actionable</h3>
+                <p id="reviewText"></p>
+                <p class="next-step" id="reviewNextStep"></p>
+              </article>
+            </section>
+
             <section class="rag-debug-panel" id="ragDebugPanel" hidden>
               <div class="panel-heading">
                 <div>
