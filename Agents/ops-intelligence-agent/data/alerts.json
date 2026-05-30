@@ -1,0 +1,17 @@
+[
+  {"id": "ALT001", "text": "CPU usage on prod-api-server-01 exceeded 95% for 10 consecutive minutes", "service": "api", "severity_hint": "P1"},
+  {"id": "ALT002", "text": "Lambda function payment-processor timed out after 15 seconds, 47 consecutive failures", "service": "lambda", "severity_hint": "P1"},
+  {"id": "ALT003", "text": "RDS connection pool exhausted on orders-db, max connections 500 reached", "service": "database", "severity_hint": "P1"},
+  {"id": "ALT004", "text": "Disk usage on log-aggregator-02 at 91%, inodes at 88%", "service": "storage", "severity_hint": "P2"},
+  {"id": "ALT005", "text": "SSL certificate for api.internal.company.com expires in 7 days", "service": "security", "severity_hint": "P2"},
+  {"id": "ALT006", "text": "Memory usage on worker-node-03 at 87%, GC pressure detected in heap logs", "service": "compute", "severity_hint": "P2"},
+  {"id": "ALT007", "text": "S3 bucket access denied errors spiking — 342 403s in last 5 minutes on reports-bucket", "service": "storage", "severity_hint": "P2"},
+  {"id": "ALT008", "text": "Kubernetes pod crash-looping on auth-service — OOMKilled 3 times in 15 minutes", "service": "kubernetes", "severity_hint": "P1"},
+  {"id": "ALT009", "text": "PagerDuty escalation missed — oncall engineer did not acknowledge P1 alert within SLA", "service": "itsm", "severity_hint": "P2"},
+  {"id": "ALT010", "text": "Sumo Logic ingestion lag 14 minutes — log pipeline delayed, alerts may be stale", "service": "observability", "severity_hint": "P2"},
+  {"id": "ALT011", "text": "CloudWatch billing alert — daily spend exceeded threshold by 40%, EC2 spike detected", "service": "cost", "severity_hint": "P3"},
+  {"id": "ALT012", "text": "Jenkins build pipeline failing — docker daemon unresponsive on build-agent-07", "service": "cicd", "severity_hint": "P3"},
+  {"id": "ALT013", "text": "Network latency between us-east-1 and eu-west-1 increased to 320ms, baseline is 180ms", "service": "network", "severity_hint": "P2"},
+  {"id": "ALT014", "text": "Terraform apply failed — state lock not released after interrupted run 2 hours ago", "service": "iac", "severity_hint": "P3"},
+  {"id": "ALT015", "text": "Health check failing on 2 of 6 instances behind ALB — 502s increasing on checkout service", "service": "loadbalancer", "severity_hint": "P1"}
+]
