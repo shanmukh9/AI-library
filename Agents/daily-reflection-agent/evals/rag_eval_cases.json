@@ -2,31 +2,26 @@
   {
     "name": "ai_builder_avoidance",
     "query": "I watched AI content but did not build anything and want to become more useful in AI",
-    "expected_headings": ["Career strengths", "Career growth areas", "Career Review", "Notes for Another Agent"]
+    "expected_headings": ["AI Career", "Recurring Pattern"]
   },
   {
-    "name": "career_visibility",
-    "query": "I feel under recognized at work and want to make my technical capability visible",
-    "expected_headings": ["Career Review", "Career growth areas", "Soft Skills Review", "Soft skill growth areas"]
+    "name": "small_visible_output",
+    "query": "I want to create a small script commit or demo before consuming another tutorial",
+    "expected_headings": ["AI Career", "Recurring Pattern"]
   },
   {
     "name": "fitness_energy",
-    "query": "I did workout and walking but still need better recovery energy and muscle building structure",
-    "expected_headings": ["Health Review", "Health strengths", "Health growth areas"]
+    "query": "I need better sleep recovery walking and mobility so I have energy for focused work",
+    "expected_headings": ["Fitness and Energy"]
   },
   {
-    "name": "burnout_loneliness",
-    "query": "I feel lonely burned out and emotionally heavy after routine work",
-    "expected_headings": ["Mental and Emotional Review", "Emotional pressure points", "Core Patterns"]
+    "name": "tiny_habit",
+    "query": "The plan feels too large and I need one action under ten minutes",
+    "expected_headings": ["Discipline"]
   },
   {
-    "name": "communication_confidence",
-    "query": "I want to improve communication confidence and speak more clearly with others",
-    "expected_headings": ["Soft Skills Review", "Soft skill strengths", "Soft skill growth areas"]
-  },
-  {
-    "name": "next_90_days",
-    "query": "What should I focus on for the next 90 days to improve my life and AI career",
-    "expected_headings": ["Suggested Focus for the Next 90 Days", "Practical Identity Summary", "Core Patterns"]
+    "name": "communication_rep",
+    "query": "I want to communicate more clearly and share one learning with another person",
+    "expected_headings": ["Communication"]
   }
 ]

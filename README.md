@@ -1,37 +1,33 @@
-# AI Library — Applied AI Engineering Portfolio
+# AI Library - Applied AI Engineering Portfolio
 
-> Building AI systems for CloudOps intelligence and enterprise automation.
+> Building practical AI systems for CloudOps intelligence and enterprise automation.
 
-## 🚀 Projects
+## Projects
 
 ### [Ops Intelligence Agent](./Agents/ops-intelligence-agent/)
-An agentic AI system that takes raw CloudOps alerts and produces 
-structured root cause analysis, severity classification, remediation 
-recommendations, and escalation decisions.
 
-**Stack:** Python • LangChain • LangGraph • ChromaDB • FastAPI • Docker  
-**Status:** 🔨 Actively building — Week 1 of 12
+An AIOps-focused capstone that turns CloudOps alerts into structured operational intelligence. This is the flagship 12-week build.
+
+**Current scope:** synthetic alert dataset and first structured analysis chain
+**Direction:** advanced RAG, tool calling, LangGraph workflows, guardrails, evals, observability, FastAPI, and Docker
 
 ### [Daily Reflection Agent](./Agents/daily-reflection-agent/)
-Personal AI agent for daily journaling and reflection using local LLMs.
 
-**Stack:** Python • LangChain • Ollama  
-**Status:** 🔨 In progress
+A privacy-first local AI reflection assistant with LM Studio, structured JSON outputs, keyword and vector RAG, retrieval evals, SQLite memory, local API hardening, and a calm browser UI.
 
----
+**Stack:** Python, LM Studio, Gemma, local embeddings, SQLite, HTML, CSS, JavaScript
+**Status:** portfolio prototype complete; intentionally frozen while the Ops Intelligence Agent becomes the primary build
 
-## 🛠️ Tech Stack
-- **AI/Agents:** LangChain, LangGraph, LangGraph Studio
-- **Models:** AWS Bedrock, LM Studio (local), Gemma 4
-- **Vector DB:** ChromaDB
-- **Cloud:** AWS (EC2, Lambda, Bedrock AgentCore)
-- **Infra:** Docker, FastAPI, Python
+## Focus
 
----
+- Applied AI and agentic systems for CloudOps
+- AIOps workflows and operational intelligence
+- RAG, evaluation, context engineering, and AI safety
+- MCP-style tool integration
+- Reliable backend systems and AWS deployment
 
-## 👤 About
-Senior DevOps & AIOps Engineer transitioning to Applied AI / 
-Agentic AI Engineering. 8 years of production CloudOps experience 
-building intelligent automation systems.
+## About
 
-🔗 [LinkedIn](https://linkedin.com/in/shanmukh9y)
+Senior DevOps and AIOps Engineer transitioning toward Applied AI and Agentic AI Engineering. The goal of this repository is to make hands-on work visible through domain-relevant projects, honest architecture tradeoffs, repeatable evaluation, and clear documentation.
+
+[LinkedIn](https://linkedin.com/in/shanmukh9y)

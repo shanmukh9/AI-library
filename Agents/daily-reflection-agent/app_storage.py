@@ -4,6 +4,7 @@ import json
 import sqlite3
 import time
 import uuid
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -38,7 +39,7 @@ def write_with_retry(callback, attempts: int = 4):
     last_error: sqlite3.OperationalError | None = None
     for attempt in range(attempts):
         try:
-            with connect() as connection:
+            with closing(connect()) as connection:
                 connection.execute("BEGIN IMMEDIATE")
                 result = callback(connection)
                 connection.commit()
@@ -58,7 +59,7 @@ def ensure_column(connection: sqlite3.Connection, table: str, column: str, defin
 
 
 def init_db() -> None:
-    with connect() as connection:
+    with closing(connect()) as connection:
         connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS reflections (
@@ -122,6 +123,7 @@ def init_db() -> None:
                     for item in DEFAULT_GOALS
                 ],
             )
+        connection.commit()
 
 
 def row_to_reflection(row: sqlite3.Row) -> dict[str, Any]:
@@ -175,7 +177,7 @@ def infer_signals(payload: dict[str, Any]) -> dict[str, bool]:
 
 
 def list_reflections(limit: int = 60) -> list[dict[str, Any]]:
-    with connect() as connection:
+    with closing(connect()) as connection:
         rows = connection.execute(
             """
             SELECT * FROM reflections
@@ -235,7 +237,7 @@ def save_reflection(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_promise_status() -> dict[str, str]:
-    with connect() as connection:
+    with closing(connect()) as connection:
         rows = connection.execute("SELECT reflection_id, status FROM promise_status").fetchall()
     return {row["reflection_id"]: row["status"] for row in rows}
 
@@ -255,7 +257,7 @@ def set_promise_status(reflection_id: str, status: str) -> None:
 
 
 def list_goals() -> list[dict[str, Any]]:
-    with connect() as connection:
+    with closing(connect()) as connection:
         rows = connection.execute(
             "SELECT id, area, target, active, created_at, updated_at FROM goals ORDER BY created_at"
         ).fetchall()

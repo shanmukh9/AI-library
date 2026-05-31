@@ -194,6 +194,7 @@ function buildReflection(text) {
 
 function normalizeReflection(reflection) {
   return {
+    notes: reflection.notes || "",
     score: Number(reflection.score) || 60,
     label: reflection.label || "Reflection ready",
     title: reflection.title || "Today has a useful signal.",
@@ -226,7 +227,7 @@ function render(reflection) {
   $("patternText").textContent = currentReflection.pattern;
   $("challengeText").textContent = currentReflection.challenge;
   $("tomorrowText").textContent = currentReflection.tomorrow;
-  $("scoreRing").style.background = `conic-gradient(var(--sage) ${currentReflection.score * 3.6}deg, #e9e3d5 0deg)`;
+  $("scoreRing").style.background = `conic-gradient(var(--sage) ${currentReflection.score * 3.6}deg, #dff5eb 0deg)`;
   $("reviewPanel").hidden = false;
   $("reviewAnswer").hidden = true;
   updateLocalStatus(currentReflection);
@@ -389,8 +390,8 @@ async function saveReflection(options = {}) {
     id: currentReflectionId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
     date: new Date().toISOString(),
     day: todayKey(),
-    notes: $("notes").value,
-    ...currentReflection
+    ...currentReflection,
+    notes: $("notes").value
   };
   $("saveBtn").disabled = true;
   try {
@@ -714,7 +715,7 @@ async function runFollowup(followupType) {
   try {
     const result = hasServer()
       ? await apiPost("/api/followup", {
-          notes: $("notes").value,
+          notes: currentReflection.notes || $("notes").value,
           reflection: currentReflection,
           followupType,
           goals: currentGoals
@@ -900,6 +901,22 @@ function updateReflectionDepthHint() {
     mode === "fast"
       ? "Fast skips extra context and asks for a tighter answer. Use it for daily logging."
       : "Deep uses RAG, goals, and recent history. Better insight, slower generation.";
+  syncAdvancedControls();
+}
+
+function syncAdvancedControls() {
+  const isFast = getSelectedReflectionDepth() === "fast";
+  document.querySelectorAll('input[name="ragMode"]').forEach((input) => {
+    input.disabled = isFast;
+  });
+  $("ragDebugToggle").disabled = isFast;
+  if (isFast) {
+    $("ragModeHint").textContent = "RAG is paused in Fast mode. Choose Deep when you want personal knowledge retrieval.";
+    $("ragDebugToggle").checked = false;
+    $("ragDebugPanel").hidden = true;
+  } else {
+    updateRagModeHint();
+  }
 }
 
 function setActiveTab(tabName) {

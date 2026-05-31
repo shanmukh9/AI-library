@@ -1,421 +1,293 @@
 # Daily Reflection Agent
 
-A local AI-powered reflection agent that turns messy daily activity notes into a calm, meaningful growth review.
+A privacy-first local AI reflection assistant that turns rough daily notes into a calm, structured growth review. It combines local LLM inference, retrieval-augmented generation (RAG), SQLite memory, lightweight analytics, and a browser UI without sending personal notes to a cloud API.
 
-It is tuned for:
+This is a portfolio prototype and learning lab, not a production mental-health product.
 
-- overall well-being
-- fitness and energy
-- AI career growth
-- discipline and deep work
-- mental strength
-- communication
-- confidence and consistency
-- gratitude and Atomic Habits-style habit formation
+## Why It Exists
 
-## What It Does
+Daily journaling often fails because it asks for too much effort and gives too little value back. This app accepts messy bullet points and returns one focused reflection:
 
-The app helps you convert rough daily notes into:
+- a transparent daily score and reason
+- a concise summary and recurring pattern
+- one direct challenge
+- one small promise for tomorrow
+- optional Socratic follow-up actions
 
-- score for the day
-- meaningful summary
-- key pattern
-- direct challenge
-- habit cue
-- tomorrow's promise
-- score explanation
-- saved reflection history
-- local goal memory
-- yesterday's promise check
-- weekly pattern review
-- behavior signals for average score, promise follow-through, builder days, and comfort-zone signals
+The design goal is simple: help a user move from passive self-improvement content toward small, visible actions.
 
-It runs locally with LM Studio and can use your personal Markdown notes through a lightweight RAG layer.
+## Demo Flow
 
-## High-Level Flow
-
-```mermaid
-flowchart TD
-    A["User writes daily notes"] --> B["Browser UI"]
-    B --> C["Local Python server"]
-    C --> D["RAG retriever"]
-    D --> E["Personal knowledge notes"]
-    D --> F["Relevant knowledge chunks"]
-    F --> G["Prompt sent to LM Studio"]
-    C --> G
-    G --> H["Local Gemma model"]
-    H --> I["Structured reflection JSON"]
-    I --> B
-    B --> J["Local SQLite memory"]
-    B --> K["Browser draft storage"]
-```
-
-## Local Model Roles
-
-LM Studio can expose more than one model at the same time. This app uses them for different jobs:
-
-```text
-Gemma chat model                 -> generates the reflection JSON
-Nomic embedding model            -> converts text into vectors for Vector RAG
-```
-
-The server intentionally skips embedding models when choosing the chat model for `/v1/chat/completions`.
-
-## RAG Flow
-
-  RAG means Retrieval-Augmented Generation. Instead of sending only today's notes to the model, the app first retrieves relevant context from your personal knowledge base.
+1. Write rough daily notes in the browser.
+2. Choose `Fast` for a short daily reflection or `Deep` for personalized context.
+3. Click `Reflect`.
+4. Review the score, pattern, challenge, and tomorrow promise.
+5. Optionally open Review Mode for a tiny-step breakdown or a direct challenge.
+6. Revisit saved reflections through History and Insights.
 
 ```mermaid
 flowchart LR
-    A["knowledge/*.md"] --> B["Chunk markdown notes"]
-    B --> C["Build local index"]
-    C --> D["data/rag_index.json"]
-    E["Today's notes"] --> F["Retrieve top matching chunks"]
-    D --> F
-    F --> G["Inject retrieved context into prompt"]
-    G --> H["Gemma reflection output"]
+    A["Messy daily notes"] --> B["Browser UI"]
+    B --> C["Local Python server"]
+    C --> D{"Reflection depth"}
+    D -->|"Fast"| E["Compact prompt"]
+    D -->|"Deep"| F["Goals + recent memory + RAG context"]
+    E --> G["LM Studio chat model"]
+    F --> G
+    G --> H["Structured reflection JSON"]
+    H --> I["SQLite local memory"]
+    H --> B
 ```
 
-Before RAG:
+## What It Demonstrates
+
+| Area | Implementation |
+| --- | --- |
+| Local AI integration | OpenAI-compatible LM Studio endpoints with automatic chat-model selection |
+| Structured outputs | JSON schema constrained reflection, weekly-review, and follow-up responses |
+| Context engineering | Separate Fast and Deep paths with bounded prompt context |
+| RAG | Keyword retrieval and semantic vector retrieval over private Markdown notes |
+| Evaluation | Repeatable retrieval eval harness with expected-heading checks |
+| Memory | SQLite persistence for reflections, goals, promise status, and behavior signals |
+| UX | Calm responsive browser UI, auto-save, loading skeletons, history, insights, and Review Mode |
+| Privacy | Localhost binding, generated per-launch API token, origin checks, local export, and local delete |
+| Mobile experiment | Importable Google AI Edge Gallery skill under `ai-edge-skills/` |
+
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph Browser["Browser UI"]
+        UI["Reflection entry and review"]
+        Draft["Draft cache"]
+    end
+
+    subgraph LocalApp["Local Python application"]
+        API["ThreadingHTTPServer API"]
+        Guard["Origin check + launch token"]
+        Store["SQLite memory"]
+        Keyword["Keyword RAG"]
+        Vector["Vector RAG"]
+    end
+
+    subgraph LMStudio["LM Studio on the same laptop"]
+        Chat["Gemma chat model"]
+        Embed["Nomic embedding model"]
+    end
+
+    UI --> Guard --> API
+    UI --> Draft
+    API --> Store
+    API --> Keyword
+    API --> Vector
+    Vector --> Embed
+    API --> Chat
+    Chat --> API --> UI
+```
+
+For a deeper walkthrough, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Fast vs Deep Reflection
+
+| Mode | Uses RAG | Uses goals and recent history | Best for |
+| --- | --- | --- | --- |
+| Fast | No | No | Short daily logging |
+| Deep | Yes | Yes | Weekly reset or a difficult day |
+
+Measured locally with `google/gemma-4-e4b`:
+
+| Path | Total time |
+| --- | ---: |
+| Earlier unbounded reflection | 162.24 s |
+| Fast mode | 39.91 s |
+| Deep mode with vector RAG | 90.31 s |
+
+The dominant latency is local model generation, not retrieval. Exact timings depend on laptop hardware and LM Studio model settings.
+
+## RAG: What Changes
+
+Without RAG:
 
 ```text
-Today's notes -> Gemma -> reflection
+today's notes -> local chat model -> reflection
 ```
 
-After RAG:
+With Deep-mode RAG:
 
 ```text
-Personal notes -> chunks -> retrieval index
-Today's notes -> retrieve relevant personal context -> Gemma -> personalized reflection
+private knowledge notes -> chunks -> local index
+today's notes -> retrieve relevant chunks -> local chat model -> personalized reflection
 ```
 
-This makes the app less generic. It can connect today's notes to your long-term themes, such as AI career growth, health discipline, comfort-zone patterns, and builder identity.
+The project includes two retrieval modes:
 
-## Project Structure
+| Retriever | How it works | Tradeoff |
+| --- | --- | --- |
+| Keyword RAG | Scores overlapping terms and headings | Fast and transparent, but literal |
+| Vector RAG | Embeds the query and ranks chunks by cosine similarity | Better semantic matching, but needs an embedding model |
 
-```text
-daily-reflection-agent/
-  web/                       Browser UI
-  data/reflections/          Saved Markdown reflections from the CLI
-  knowledge/                 Private Markdown knowledge base for RAG
-  scripts/                   Utility scripts
-  evals/                     RAG retrieval evaluation cases
-  examples/                  Sample daily notes
-  ai-edge-skills/            Android AI Edge Gallery skill export
-  server.py                  Local LM Studio bridge and web server
-  rag.py                     Local retrieval layer
-  daily_reflection_agent.py  Optional CLI reflection agent
-  README.md
+### Vector RAG Flow
+
+```mermaid
+flowchart LR
+    A["knowledge/*.md"] --> B["Chunk text"]
+    B --> C["Embedding model"]
+    C --> D["data/vector_index.json"]
+    E["Daily notes"] --> F["Query embedding"]
+    F --> G["Cosine similarity"]
+    D --> G
+    G --> H["Top matching chunks"]
+    H --> I["Deep reflection prompt"]
 ```
 
-## Personal Knowledge RAG
+The saved index contains knowledge-chunk vectors. During a reflection, the app embeds only the new query and compares it with the saved vectors.
 
-Add Markdown notes under:
+## Run Locally
+
+### Prerequisites
+
+- Python 3.11+
+- [LM Studio](https://lmstudio.ai/)
+- one loaded chat model, such as `google/gemma-4-e4b`
+- optional embedding model for Vector RAG, such as `text-embedding-nomic-embed-text-v1.5`
+
+### Start
+
+1. Start the LM Studio local server at `http://127.0.0.1:1234`.
+2. From this folder, run:
+
+```powershell
+.\scripts\start.ps1
+```
+
+3. Open `http://127.0.0.1:8765`.
+
+You can also run `python .\server.py` directly.
+
+### Offline Fallback
+
+Open `web/index.html` directly to use a simpler rule-based fallback. It keeps draft and reflection data in browser local storage.
+
+## Add Private Knowledge
+
+Private notes belong under:
 
 ```text
 knowledge/
 ```
 
-Build the local retrieval index:
+Start from the sanitized example:
+
+```powershell
+Copy-Item .\examples\sample_growth_profile.md .\knowledge\personal_growth_notes.md
+```
+
+Build the indexes:
 
 ```powershell
 python .\scripts\index_knowledge.py
-```
-
-This creates:
-
-```text
-data/rag_index.json
-```
-
-`data/rag_index.json` is generated and ignored by git.
-
-To inspect retrieval directly:
-
-```powershell
-python .\scripts\query_knowledge.py "I avoided AI building and need a small habit cue"
-```
-
-## RAG Evaluation
-
-RAG should be measured, not trusted blindly. This project includes a small retrieval evaluation harness:
-
-```text
-evals/rag_eval_cases.json
-scripts/evaluate_rag.py
-```
-
-Each eval case contains:
-
-- a realistic query
-- expected knowledge headings that should appear in the top retrieved chunks
-
-Run the baseline eval:
-
-```powershell
-python .\scripts\evaluate_rag.py
-```
-
-Example output:
-
-```text
-[PASS] ai_builder_avoidance
-Retrieved:
-  * 1. Career strengths
-    2. Core Patterns
-  * 3. Notes for Another Agent
-
-Summary
-Passed: 6/6
-Hit rate: 100.0%
-```
-
-This helps answer:
-
-- Did retrieval find the right personal knowledge?
-- Which chunk ranked first?
-- Did irrelevant chunks appear?
-- Is the retriever ready to be replaced with vector search?
-
-When the app uses retrieved knowledge, the UI status shows:
-
-```text
-Local AI + RAG
-```
-
-## Vector RAG
-
-The project supports two retrieval modes:
-
-```text
-Keyword RAG  - matches terms and headings
-Vector RAG   - embeds text and retrieves by semantic similarity
-```
-
-Keyword RAG is fast, transparent, and works without an embedding model. Vector RAG needs LM Studio's embedding endpoint and a local embedding model such as:
-
-```text
-text-embedding-nomic-embed-text-v1.5
-```
-
-Build the vector index:
-
-```powershell
 python .\scripts\index_knowledge_vectors.py
 ```
 
-This creates:
+Generated indexes and private notes are ignored by Git.
 
-```text
-data/vector_index.json
-```
+## Inspect and Evaluate Retrieval
 
-Query vector retrieval directly:
+Query each retriever directly:
 
 ```powershell
+python .\scripts\query_knowledge.py "I consumed AI content but avoided building"
 python .\scripts\query_vector_knowledge.py "I consumed AI content but avoided building"
 ```
 
-Compare retrieval modes:
+Run the repeatable eval suite:
 
 ```powershell
 python .\scripts\evaluate_rag.py --mode keyword
 python .\scripts\evaluate_rag.py --mode vector
 ```
 
-In the UI, choose:
+The browser also has an optional Deep-mode RAG debug panel showing source, heading, score, and excerpt. Debug mode stays hidden during normal journaling so the main flow remains calm.
 
-```text
-RAG mode: Keyword | Vector
-```
+## Local Privacy Boundary
 
-### Vector RAG Architecture
+Personal reflections may include sensitive emotional, career, or health-adjacent notes. This prototype keeps them local:
 
-```mermaid
-flowchart TD
-    A["knowledge/*.md"] --> B["Chunk markdown notes"]
-    B --> C["Embedding model in LM Studio"]
-    C --> D["Chunk vectors"]
-    D --> E["data/vector_index.json"]
+- the server binds to `127.0.0.1`
+- the UI receives a random per-launch session token
+- API requests must send `X-Reflection-Agent-Token`
+- API requests with foreign `Origin` headers are rejected
+- reflections are stored in `data/reflection_agent.db`
+- private notes, generated indexes, databases, logs, and `.env` files are ignored by Git
+- the Privacy tab can export or delete local app memory
 
-    F["User daily notes"] --> G["Browser UI"]
-    G --> H["server.py"]
-    H --> I["Embedding model in LM Studio"]
-    I --> J["Query vector"]
-    E --> K["Cosine similarity search"]
-    J --> K
-    K --> L["Top matching knowledge chunks"]
-    L --> M["Prompt context"]
-    F --> M
-    M --> N["Gemma chat model in LM Studio"]
-    N --> O["Reflection JSON"]
-    O --> G
-```
-
-Vector RAG has two phases:
-
-```text
-Index time:
-knowledge chunks -> embedding model -> saved vectors
-
-Query time:
-daily notes -> embedding model -> query vector -> compare with saved vectors
-```
-
-The app does not regenerate all knowledge vectors during every reflection. It only embeds the current query and compares it against the saved vector index.
-
-## RAG Debug Mode
-
-The main UI stays calm by default. To inspect retrieval, enable:
-
-```text
-Show RAG debug after reflection
-```
-
-When enabled, the app shows a `Knowledge used` panel after reflection with:
-
-- source file
-- heading
-- retrieval score
-- short excerpt
-
-This helps debug whether RAG is pulling the right context before the answer is generated.
-
-## Run With Local AI
-
-1. Open LM Studio.
-2. Load your Gemma model.
-3. Start LM Studio's local server. The default endpoint should be:
-
-```text
-http://127.0.0.1:1234
-```
-
-4. In this project folder, run:
+Before making the repository public, run:
 
 ```powershell
-python server.py
+git check-ignore -v .\knowledge\personal_growth_notes.md .\data\reflection_agent.db .\data\rag_index.json .\data\vector_index.json
 ```
 
-5. Open:
+## Project Structure
 
 ```text
-http://127.0.0.1:8765
+daily-reflection-agent/
+  ai-edge-skills/             Android AI Edge Gallery skill experiment
+  docs/                       Architecture, decisions, and demo guide
+  evals/                      Retrieval evaluation cases
+  examples/                   Sanitized public examples
+  knowledge/                  Private Markdown notes, ignored by Git
+  scripts/                    Start, indexing, querying, and eval utilities
+  tests/                      Focused automated tests
+  web/                        Browser UI
+  app_storage.py              SQLite local memory and analytics
+  rag.py                      Keyword RAG
+  vector_rag.py               Vector RAG with local embeddings
+  server.py                   Local web server and LM Studio bridge
 ```
 
-Your notes stay on your laptop. The UI sends them only to your local LM Studio server.
+## Tests
 
-## Offline UI
-
-Open:
-
-```text
-web/index.html
-```
-
-Opening the file directly runs the simpler rule-based fallback without LM Studio. It keeps your draft and saved reflections in browser local storage.
-
-## Optional CLI
-
-Interactive mode:
+Run the local checks:
 
 ```powershell
-python daily_reflection_agent.py
+python -m unittest discover -s .\tests -v
+python -m py_compile .\server.py .\app_storage.py .\rag.py .\vector_rag.py
+node --check .\web\app.js
 ```
 
-From quick text:
+Vector evals require the embedding model to be loaded in LM Studio.
 
-```powershell
-python daily_reflection_agent.py --text "Watched 1 hour AI podcast. Completed daily tasks. Felt stuck in comfort zone. Want to build AI agents."
-```
+## Design Decisions and Limits
 
-From a notes file:
+This project intentionally favors a small local stack:
 
-```powershell
-python daily_reflection_agent.py --file examples/today_sample.txt
-```
+- SQLite is enough for a single-user laptop workflow.
+- A custom Python standard-library server keeps setup simple.
+- Bounded Deep-mode context controls prompt size.
+- Fast mode avoids RAG and history when speed matters more than personalization.
+- The UI presents one primary reflection instead of overwhelming the user with many mapped growth categories.
 
-Each CLI run prints a concise reflection and saves a Markdown file under:
+Known limits:
+
+- local model speed depends heavily on hardware
+- the backend uses blocking HTTP calls and is not a production multi-user service
+- indexes are rebuilt manually when knowledge files change
+- vector search is an in-memory cosine scan, suitable for a personal knowledge base
+- fallback coaching is intentionally simpler than local LLM output
+
+For production, the next steps would be FastAPI with async HTTP calls, encrypted storage, incremental vector indexing, stronger rate limiting, and a deployment-specific authentication model.
+
+## Portfolio Positioning
+
+This project is a focused secondary portfolio artifact. It demonstrates the path from a personal problem to an end-to-end local AI product:
 
 ```text
-data/reflections/
+idea -> UX -> local model integration -> structured output -> RAG -> evals
+     -> memory -> security hardening -> latency tradeoffs -> documentation
 ```
 
-## Suggested Daily Input
+The flagship capstone in this repository is the domain-specific Ops Intelligence Agent. DRA remains intentionally frozen after this portfolio wrap-up so future learning can compound inside that larger CloudOps and AIOps project.
 
-Write rough points from your mobile. Messy is fine.
+## Demo
 
-```text
-- Watched 1 hour AI podcast
-- Completed daily tasks
-- Felt like I did not accomplish enough
-- Want to build AI agents instead of watching more videos
-- Did not exercise
-- Felt grateful for having a holiday
-```
-
-## What Is Stored
-
-The browser stores:
-
-- `draftNotes`
-- `reflectionCache`
-
-The local Python server stores durable app memory in:
-
-```text
-data/reflection_agent.db
-```
-
-The SQLite database stores:
-
-- saved reflections
-- score explanations
-- goals used for personalization
-- promise status
-
-This is local to the browser profile for:
-
-```text
-http://127.0.0.1:8765
-```
-
-The repository ignores private/generated files:
-
-- `knowledge/*.md`
-- `data/reflections/`
-- `data/rag_index.json`
-- `data/vector_index.json`
-- `data/*.db`
-- `.env`
-
-Use the Privacy tab in the UI to export or delete local app memory.
-
-## Local API Protection
-
-The server injects a random per-launch session token into the served UI. Browser API calls must send that token in:
-
-```text
-X-Reflection-Agent-Token
-```
-
-API requests with a foreign `Origin` header are rejected. This reduces the risk of another website reading or mutating your local reflection data while the app is running.
-
-## Learning Path
-
-This project currently teaches:
-
-- local LLM integration with LM Studio
-- prompt engineering with structured JSON output
-- browser UI and localStorage memory
-- SQLite-backed local memory
-- RAG fundamentals: ingest, chunk, index, retrieve, augment, generate
-- vector RAG with local embeddings
-- promise tracking and weekly pattern analysis
-- privacy controls and score transparency
-
-Next natural upgrade:
-
-```text
-Compare keyword, vector, and hybrid retrieval quality.
-```
+Use [docs/DEMO.md](docs/DEMO.md) for a short recruiter walkthrough.
