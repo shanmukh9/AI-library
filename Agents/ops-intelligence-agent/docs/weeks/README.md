@@ -12,7 +12,7 @@ Use them to:
 | Week | Focus | Status |
 | --- | --- | --- |
 | [Week 01](week-01-llm-foundations.md) | LLM foundations, structured output, local embeddings, cosine similarity | Complete |
-| [Week 02](week-02-runbook-rag.md) | Runbook RAG | Planned |
+| [Week 02](week-02-runbook-rag.md) | Runbook RAG | Complete locally |
 | [Week 03](week-03-advanced-rag.md) | Query rewriting and retrieval evaluation | Planned |
 | [Week 04](week-04-architecture-decisions.md) | RAG architecture decisions | Planned |
 | [Week 05](week-05-tool-calling.md) | Typed outputs and tool calling | Planned |

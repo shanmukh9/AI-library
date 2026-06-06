@@ -8,6 +8,11 @@ The [12-week engineering diary](docs/weeks/README.md) records each increment,
 its measurements, limitations, and the concepts worth recollecting later.
 Start with the [Week 1 retrospective](docs/weeks/week-01-llm-foundations.md).
 
+## Current Status
+
+- Week 1: local structured alert analysis baseline complete.
+- Week 2: runbook RAG baseline complete locally.
+
 ## Week 1 Baseline
 
 Current flow:
@@ -180,4 +185,64 @@ The useful result is the ranking: the related pair scores higher than the unrela
 
 ## Next Step
 
-Week 2 adds runbook RAG so alert analysis can use retrieved operational context rather than only the model's general training knowledge.
+Week 2 added runbook RAG so alert analysis can use retrieved operational
+context rather than only the model's general training knowledge.
+
+## Week 2 Runbook RAG
+
+Current retrieval flow:
+
+```text
+CloudOps alert
+    |
+    v
+Embedding model
+    |
+    v
+Alert query vector
+    |
+    v
+Cosine similarity against runbook chunk vectors
+    |
+    v
+Top runbook evidence
+    |
+    v
+Gemma chat model + severity policy
+    |
+    v
+Structured JSON analysis
+```
+
+Build the local runbook index:
+
+```powershell
+python .\index_runbooks.py
+```
+
+Query the runbook retriever:
+
+```powershell
+python .\query_runbooks.py "CPU usage on prod-api-server-01 exceeded 95% for 10 consecutive minutes"
+```
+
+Evaluate retrieval:
+
+```powershell
+python .\evaluate_runbook_rag.py
+```
+
+Measured locally:
+
+```text
+Minimum similarity:      0.60
+Retrieval eval:          6/6
+Retrieval hit rate:      100.0%
+RAG-backed severity:     3/3 on selected P1 alerts
+```
+
+The retriever filters weak chunks below `0.60` similarity so unrelated top-k
+results do not pollute the LLM context.
+
+The generated vector index is ignored by Git. Rebuild it locally with
+`python .\index_runbooks.py` after changing runbook content.

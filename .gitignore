@@ -1,3 +1,9 @@
 # Private local career-planning notes
 CAREER_TRANSITION_TRACKER.md
 evidence_ledger.md
+
+# Generated local vector indexes
+Agents/ops-intelligence-agent/data/runbook_index.json
+
+# Python generated files
+__pycache__/
