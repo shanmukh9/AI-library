@@ -236,13 +236,15 @@ Measured locally:
 
 ```text
 Minimum similarity:      0.60
-Retrieval eval:          6/6
-Retrieval hit rate:      100.0%
+Top-1 accuracy:          6/6
+Top-3 hit rate:          6/6
+Negative no-match:       1/1
 RAG-backed severity:     3/3 on selected P1 alerts
 ```
 
 The retriever filters weak chunks below `0.60` similarity so unrelated top-k
-results do not pollute the LLM context.
+results do not pollute the LLM context. The eval also includes a negative query
+that should return no runbook evidence.
 
 The generated vector index is ignored by Git. Rebuild it locally with
 `python .\index_runbooks.py` after changing runbook content.

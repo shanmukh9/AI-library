@@ -61,8 +61,10 @@ structured JSON response
 | Check | Result |
 | --- | --- |
 | Runbook files | `6` |
-| Retrieval eval cases | `6/6` |
-| Retrieval hit rate | `100.0%` |
+| Positive retrieval cases | `6` |
+| Top-1 accuracy | `6/6` |
+| Top-3 hit rate | `6/6` |
+| Negative no-match cases | `1/1` |
 | Minimum similarity cutoff | `0.60` |
 | RAG-backed severity check | `3/3` on selected P1 alerts |
 
@@ -94,6 +96,18 @@ ssl-certificate-expiry.md / Overview
 similarity: 0.7529
 ```
 
+Negative query:
+
+```text
+employee laptop password reset request
+```
+
+Expected behavior:
+
+```text
+No chunks passed the minimum similarity cutoff
+```
+
 ## Important Lesson
 
 RAG alone does not make the system correct. Retrieval finds relevant evidence,
@@ -111,6 +125,15 @@ always return the nearest chunks, even when the second and third chunks are weak
 or irrelevant. A minimum similarity cutoff prevents weak evidence from being
 sent to the LLM.
 
+Today, the eval was improved from a single "did it appear anywhere?" check into
+three clearer measurements:
+
+```text
+Top-1 accuracy  -> was the best chunk from the expected runbook?
+Top-3 hit rate  -> did the expected runbook appear anywhere in the top results?
+Negative no-match -> did an unrelated query correctly return no evidence?
+```
+
 ## Safety Lesson
 
 Runbook evidence should ground recommendations, but it should not authorize
@@ -120,7 +143,7 @@ human approval for risky actions.
 ## Known Limits
 
 - Runbooks are synthetic and small.
-- Evaluation uses six labeled queries.
+- Evaluation uses six positive labeled queries and one negative no-match query.
 - Retrieval is vector-only; no keyword or hybrid retrieval yet.
 - The generated vector index is local output and is ignored by Git.
 - The chat model can still make mistakes even with retrieved evidence.
@@ -142,4 +165,5 @@ model, and ranked chunks with cosine similarity for each incoming alert. The
 main alert-analysis chain now receives only retrieved evidence above a minimum
 similarity cutoff before generating structured JSON. The key lesson was that RAG
 improves grounding, but classification still needs an explicit severity policy
-and retrieval needs a quality gate.
+and retrieval needs a quality gate. I also evaluated retrieval with top-1
+accuracy, top-3 hit rate, and a negative query that should return no evidence.
