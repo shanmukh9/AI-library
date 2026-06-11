@@ -36,6 +36,11 @@ TEST_CASES = [
         "name": "negative_password_reset",
         "query": "employee laptop password reset request",
         "expected_source": None,
+    },
+    {
+        "name": "negative_lambda_ok",
+        "query": "lambda ok",
+        "expected_source": None,
     }
 ]
 

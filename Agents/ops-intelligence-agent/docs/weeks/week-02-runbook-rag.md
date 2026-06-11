@@ -64,7 +64,7 @@ structured JSON response
 | Positive retrieval cases | `6` |
 | Top-1 accuracy | `6/6` |
 | Top-3 hit rate | `6/6` |
-| Negative no-match cases | `1/1` |
+| Negative no-match cases | `2/2` |
 | Minimum similarity cutoff | `0.60` |
 | RAG-backed severity check | `3/3` on selected P1 alerts |
 
@@ -100,6 +100,7 @@ Negative query:
 
 ```text
 employee laptop password reset request
+lambda ok
 ```
 
 Expected behavior:

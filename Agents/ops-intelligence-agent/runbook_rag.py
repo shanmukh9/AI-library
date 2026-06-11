@@ -12,6 +12,30 @@ EMBEDDINGS_URL = "http://127.0.0.1:1234/v1/embeddings"
 EMBEDDING_MODEL = "text-embedding-nomic-embed-text-v1.5"
 DEFAULT_MIN_SCORE = 0.60
 
+OPERATIONAL_PROBLEM_SIGNALS = [
+    "timeout",
+    "failed",
+    "failure",
+    "error",
+    "exceeded",
+    "high",
+    "crash",
+    "crashloop",
+    "oomkilled",
+    "502",
+    "latency",
+    "exhausted",
+    "denied",
+    "unhealthy",
+    "expiring",
+    "expires",
+]
+
+
+def has_operational_problem_signal(query):
+    normalized_query = query.lower()
+    return any(signal in normalized_query for signal in OPERATIONAL_PROBLEM_SIGNALS)
+
 
 def embed_text(text):
     payload = {
@@ -110,6 +134,8 @@ def load_runbook_index(index_path=INDEX_PATH):
 
 
 def search_runbooks(query, top_k=3, min_score=DEFAULT_MIN_SCORE, index_path=INDEX_PATH):
+    if not has_operational_problem_signal(query):
+        return []
     index = load_runbook_index(index_path)
     query_embedding = embed_text(query)
     scored_chunks = []

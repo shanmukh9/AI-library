@@ -238,7 +238,7 @@ Measured locally:
 Minimum similarity:      0.60
 Top-1 accuracy:          6/6
 Top-3 hit rate:          6/6
-Negative no-match:       1/1
+Negative no-match:       2/2
 RAG-backed severity:     3/3 on selected P1 alerts
 ```
 
