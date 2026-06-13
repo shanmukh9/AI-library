@@ -31,10 +31,33 @@ OPERATIONAL_PROBLEM_SIGNALS = [
     "expires",
 ]
 
+QUERY_EXPANSION_RULES = [
+    {
+        "triggers": ["memory killed", "pod memory killed"],
+        "expansion": "OOMKilled pod crash-looping memory limit exceeded",
+    },
+    {
+        "triggers": ["cpu hot", "server hot", "api hot"],
+        "expansion": "high CPU usage exceeded 95 percent saturation",
+    },
+]
+
 
 def has_operational_problem_signal(query):
     normalized_query = query.lower()
     return any(signal in normalized_query for signal in OPERATIONAL_PROBLEM_SIGNALS)
+
+
+def expand_query_for_retrieval(query):
+    normalized_query = query.lower()
+    expansions = [
+        rule["expansion"]
+        for rule in QUERY_EXPANSION_RULES
+        if any(trigger in normalized_query for trigger in rule["triggers"])
+    ]
+    if not expansions:
+        return query
+    return " ".join([query, *expansions])
 
 
 def embed_text(text):
@@ -134,10 +157,11 @@ def load_runbook_index(index_path=INDEX_PATH):
 
 
 def search_runbooks(query, top_k=3, min_score=DEFAULT_MIN_SCORE, index_path=INDEX_PATH):
-    if not has_operational_problem_signal(query):
+    expanded_query = expand_query_for_retrieval(query)
+    if not has_operational_problem_signal(expanded_query):
         return []
     index = load_runbook_index(index_path)
-    query_embedding = embed_text(query)
+    query_embedding = embed_text(expanded_query)
     scored_chunks = []
 
     for chunk in index["chunks"]:

@@ -8,10 +8,19 @@ The [12-week engineering diary](docs/weeks/README.md) records each increment,
 its measurements, limitations, and the concepts worth recollecting later.
 Start with the [Week 1 retrospective](docs/weeks/week-01-llm-foundations.md).
 
+## Visual Learning
+
+Open the [OIA Visual Operating System](docs/visuals/week2-rag-motion.html)
+in a browser to move week by week through the project. It currently visualizes
+the Week 1 LLM baseline and Week 2 Runbook RAG layer, including signal gating,
+embeddings, cosine similarity, `min_score`, retrieved evidence, severity policy,
+and JSON output.
+
 ## Current Status
 
 - Week 1: local structured alert analysis baseline complete.
 - Week 2: runbook RAG baseline complete locally.
+- Week 3: deterministic query expansion started for terse alert retrieval.
 
 ## Week 1 Baseline
 

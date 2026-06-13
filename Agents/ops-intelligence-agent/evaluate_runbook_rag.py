@@ -33,6 +33,16 @@ TEST_CASES = [
         "expected_source": "ssl-certificate-expiry.md",
     },
     {
+        "name": "terse_kubernetes_memory_killed",
+        "query": "auth pod memory killed repeatedly",
+        "expected_source": "kubernetes-oomkill.md",
+    },
+    {
+        "name": "terse_api_cpu_hot",
+        "query": "api cpu hot",
+        "expected_source": "api-cpu-saturation.md",
+    },
+    {
         "name": "negative_password_reset",
         "query": "employee laptop password reset request",
         "expected_source": None,
