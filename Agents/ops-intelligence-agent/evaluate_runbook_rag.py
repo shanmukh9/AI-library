@@ -1,4 +1,17 @@
+import argparse
+
 from runbook_rag import DEFAULT_MIN_SCORE, search_runbooks
+
+
+parser = argparse.ArgumentParser(description="Evaluate OIA runbook retrieval.")
+parser.add_argument(
+    "--mode",
+    choices=["baseline", "expanded"],
+    default="expanded",
+    help="baseline disables query expansion; expanded enables query expansion.",
+)
+args = parser.parse_args()
+use_expansion = args.mode == "expanded"
 
 
 TEST_CASES = [
@@ -62,7 +75,12 @@ top_3_hits = 0
 negative_passes = 0
 
 for case in TEST_CASES:
-    results = search_runbooks(case["query"], top_k=3, min_score=DEFAULT_MIN_SCORE)
+    results = search_runbooks(
+        case["query"],
+        top_k=3,
+        min_score=DEFAULT_MIN_SCORE,
+        use_expansion=use_expansion,
+    )
     sources = [result["source"] for result in results]
     expected_source = case["expected_source"]
     is_negative_case = expected_source is None
@@ -98,6 +116,7 @@ for case in TEST_CASES:
 
 print()
 print("Summary")
+print(f"Mode: {args.mode}")
 print(f"Minimum similarity: {DEFAULT_MIN_SCORE:.2f}")
 print(f"Positive cases: {len(positive_cases)}")
 print(

@@ -20,7 +20,7 @@ and JSON output.
 
 - Week 1: local structured alert analysis baseline complete.
 - Week 2: runbook RAG baseline complete locally.
-- Week 3: deterministic query expansion started for terse alert retrieval.
+- Week 3: deterministic query expansion started and measured against baseline retrieval.
 
 ## Week 1 Baseline
 

@@ -18,6 +18,7 @@ Improve retrieval quality with a measured baseline-versus-improved comparison.
 - Deterministic query expansion in `runbook_rag.py`.
 - Two terse positive eval cases in `evaluate_runbook_rag.py`.
 - Expanded-query visibility in `query_runbooks.py`.
+- Baseline versus expanded eval mode using `--mode baseline` and `--mode expanded`.
 
 ## Why This Matters
 
@@ -59,12 +60,32 @@ api cpu hot
 
 ## Measured Results
 
+Baseline mode, without query expansion:
+
+```text
+Positive cases:     8
+Top-1 accuracy:     6/8
+Top-3 hit rate:     6/8
+Negative no-match:  2/2
+Minimum similarity: 0.60
+```
+
+Expanded mode, with query expansion:
+
 ```text
 Positive cases:     8
 Top-1 accuracy:     8/8
 Top-3 hit rate:     8/8
 Negative no-match:  2/2
 Minimum similarity: 0.60
+```
+
+Improvement:
+
+```text
+Top-1 accuracy: +25 percentage points
+Top-3 hit rate: +25 percentage points
+Negative no-match: unchanged at 2/2
 ```
 
 ## Important Lesson
@@ -76,6 +97,16 @@ searchable operational language.
 This is still not LLM query rewriting. It is a deterministic, explainable first
 step.
 
+Today's measurement is an ablation test:
+
+```text
+baseline = retrieval without query expansion
+expanded = retrieval with query expansion
+```
+
+The only intended difference is the query expansion step, so the metric delta
+shows whether the new component helped.
+
 ## Known Limits
 
 - The expansion rules are hand-written and small.
@@ -85,5 +116,5 @@ step.
 
 ## Next Step
 
-Compare retrieval with and without query expansion so the improvement is shown
-as a true baseline-versus-improved result.
+Move expansion rules out of Python into a small configuration file, then rerun
+the same baseline-versus-expanded eval.

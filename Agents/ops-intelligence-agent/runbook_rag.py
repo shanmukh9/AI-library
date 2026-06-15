@@ -156,8 +156,14 @@ def load_runbook_index(index_path=INDEX_PATH):
     return json.loads(index_path.read_text(encoding="utf-8"))
 
 
-def search_runbooks(query, top_k=3, min_score=DEFAULT_MIN_SCORE, index_path=INDEX_PATH):
-    expanded_query = expand_query_for_retrieval(query)
+def search_runbooks(
+    query,
+    top_k=3,
+    min_score=DEFAULT_MIN_SCORE,
+    index_path=INDEX_PATH,
+    use_expansion=True,
+):
+    expanded_query = expand_query_for_retrieval(query) if use_expansion else query
     if not has_operational_problem_signal(expanded_query):
         return []
     index = load_runbook_index(index_path)
