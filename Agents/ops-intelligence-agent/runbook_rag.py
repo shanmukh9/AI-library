@@ -8,6 +8,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 RUNBOOK_DIR = PROJECT_ROOT / "runbooks"
 INDEX_PATH = PROJECT_ROOT / "data" / "runbook_index.json"
+QUERY_EXPANSIONS_PATH = PROJECT_ROOT / "data" / "query_expansions.json"
 EMBEDDINGS_URL = "http://127.0.0.1:1234/v1/embeddings"
 EMBEDDING_MODEL = "text-embedding-nomic-embed-text-v1.5"
 DEFAULT_MIN_SCORE = 0.60
@@ -31,28 +32,28 @@ OPERATIONAL_PROBLEM_SIGNALS = [
     "expires",
 ]
 
-QUERY_EXPANSION_RULES = [
-    {
-        "triggers": ["memory killed", "pod memory killed"],
-        "expansion": "OOMKilled pod crash-looping memory limit exceeded",
-    },
-    {
-        "triggers": ["cpu hot", "server hot", "api hot"],
-        "expansion": "high CPU usage exceeded 95 percent saturation",
-    },
-]
-
-
 def has_operational_problem_signal(query):
     normalized_query = query.lower()
     return any(signal in normalized_query for signal in OPERATIONAL_PROBLEM_SIGNALS)
 
 
+def load_query_expansion_rules(path=QUERY_EXPANSIONS_PATH):
+    if not path.exists():
+        raise FileNotFoundError(f"Query expansion config not found at {path}")
+
+    rules = json.loads(path.read_text(encoding="utf-8"))
+    for index, rule in enumerate(rules, start=1):
+        if not isinstance(rule.get("triggers"), list) or not rule.get("expansion"):
+            raise ValueError(f"Invalid query expansion rule at position {index}")
+    return rules
+
+
 def expand_query_for_retrieval(query):
     normalized_query = query.lower()
+    rules = load_query_expansion_rules()
     expansions = [
         rule["expansion"]
-        for rule in QUERY_EXPANSION_RULES
+        for rule in rules
         if any(trigger in normalized_query for trigger in rule["triggers"])
     ]
     if not expansions:

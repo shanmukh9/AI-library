@@ -19,6 +19,7 @@ Improve retrieval quality with a measured baseline-versus-improved comparison.
 - Two terse positive eval cases in `evaluate_runbook_rag.py`.
 - Expanded-query visibility in `query_runbooks.py`.
 - Baseline versus expanded eval mode using `--mode baseline` and `--mode expanded`.
+- Query expansion rules moved into `data/query_expansions.json`.
 
 ## Why This Matters
 
@@ -97,6 +98,15 @@ searchable operational language.
 This is still not LLM query rewriting. It is a deterministic, explainable first
 step.
 
+The expansion rules are configuration-driven:
+
+```text
+data/query_expansions.json
+```
+
+This keeps domain aliases separate from retrieval logic. New aliases can be
+added without editing the core search code.
+
 Today's measurement is an ablation test:
 
 ```text
@@ -116,5 +126,5 @@ shows whether the new component helped.
 
 ## Next Step
 
-Move expansion rules out of Python into a small configuration file, then rerun
-the same baseline-versus-expanded eval.
+Add one more terse failure case only if it appears during testing, then compare
+whether config-driven expansion still protects negative no-match behavior.

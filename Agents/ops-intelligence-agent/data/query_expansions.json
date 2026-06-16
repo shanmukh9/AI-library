@@ -1,0 +1,10 @@
+[
+  {
+    "triggers": ["memory killed", "pod memory killed"],
+    "expansion": "OOMKilled pod crash-looping memory limit exceeded"
+  },
+  {
+    "triggers": ["cpu hot", "server hot", "api hot"],
+    "expansion": "high CPU usage exceeded 95 percent saturation"
+  }
+]
