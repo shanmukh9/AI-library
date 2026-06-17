@@ -6,5 +6,17 @@
   {
     "triggers": ["cpu hot", "server hot", "api hot"],
     "expansion": "high CPU usage exceeded 95 percent saturation"
+  },
+  {
+    "triggers": ["db maxed connections", "maxed connections", "database maxed connections"],
+    "expansion": "RDS connection pool exhausted max database connections reached"
+  },
+  {
+    "triggers": ["checkout throwing bad gateway", "bad gateway checkout", "checkout bad gateway"],
+    "expansion": "ALB health checks failing 502 responses increasing checkout service"
+  },
+  {
+    "triggers": ["api is slow", "api slow"],
+    "expansion": "API slow responses high CPU usage saturation"
   }
 ]

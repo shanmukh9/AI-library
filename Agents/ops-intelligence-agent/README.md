@@ -12,15 +12,15 @@ Start with the [Week 1 retrospective](docs/weeks/week-01-llm-foundations.md).
 
 Open the [OIA Visual Operating System](docs/visuals/week2-rag-motion.html)
 in a browser to move week by week through the project. It currently visualizes
-the Week 1 LLM baseline and Week 2 Runbook RAG layer, including signal gating,
-embeddings, cosine similarity, `min_score`, retrieved evidence, severity policy,
-and JSON output.
+the Week 1 LLM baseline, Week 2 Runbook RAG layer, and Week 3 query-expansion
+layer, including signal gating, embeddings, cosine similarity, `min_score`,
+retrieved evidence, severity policy, and JSON output.
 
 ## Current Status
 
 - Week 1: local structured alert analysis baseline complete.
 - Week 2: runbook RAG baseline complete locally.
-- Week 3: deterministic query expansion started and measured against baseline retrieval.
+- Week 3: deterministic query expansion measured against baseline retrieval.
 
 ## Week 1 Baseline
 
@@ -257,3 +257,42 @@ that should return no runbook evidence.
 
 The generated vector index is ignored by Git. Rebuild it locally with
 `python .\index_runbooks.py` after changing runbook content.
+
+## Week 3 Query Expansion
+
+Week 3 adds a deterministic query-expansion layer for terse operational
+language. The goal is to translate vague alert shorthand into the language used
+inside runbooks before embedding search runs.
+
+Example:
+
+```text
+db maxed connections
+    -> RDS connection pool exhausted max database connections reached
+
+checkout throwing bad gateway
+    -> ALB health checks failing 502 responses increasing checkout service
+```
+
+Compare baseline and expanded retrieval:
+
+```powershell
+python .\evaluate_runbook_rag.py --mode baseline
+python .\evaluate_runbook_rag.py --mode expanded
+```
+
+Measured locally:
+
+```text
+Baseline top-1 accuracy:      6/11
+Expanded top-1 accuracy:      11/11
+Baseline top-3 hit rate:      6/11
+Expanded top-3 hit rate:      11/11
+Negative no-match:            2/2 in both modes
+Minimum similarity:           0.60
+```
+
+The important lesson is restraint: `logs delayed` still returns no evidence
+because the project does not yet contain a log-pipeline runbook. Missing
+knowledge should be fixed by adding the right runbook, not by forcing a weak
+retrieval match.

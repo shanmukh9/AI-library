@@ -56,6 +56,21 @@ TEST_CASES = [
         "expected_source": "api-cpu-saturation.md",
     },
     {
+        "name": "terse_db_maxed_connections",
+        "query": "db maxed connections",
+        "expected_source": "rds-connection-pool.md",
+    },
+    {
+        "name": "terse_checkout_bad_gateway",
+        "query": "checkout throwing bad gateway",
+        "expected_source": "alb-502-health-checks.md",
+    },
+    {
+        "name": "terse_api_slow",
+        "query": "api is slow",
+        "expected_source": "api-cpu-saturation.md",
+    },
+    {
         "name": "negative_password_reset",
         "query": "employee laptop password reset request",
         "expected_source": None,
