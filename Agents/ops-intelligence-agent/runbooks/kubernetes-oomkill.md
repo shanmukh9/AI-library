@@ -1,3 +1,8 @@
++++
+platform = "kubernetes"
+category = "memory"
++++
+
 # Kubernetes OOMKilled Pod Runbook
 
 ## Symptoms

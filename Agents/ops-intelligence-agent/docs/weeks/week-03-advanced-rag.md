@@ -20,6 +20,9 @@ Improve retrieval quality with a measured baseline-versus-improved comparison.
 - Expanded-query visibility in `query_runbooks.py`.
 - Baseline versus expanded eval mode using `--mode baseline` and `--mode expanded`.
 - Query expansion rules moved into `data/query_expansions.json`.
+- TOML metadata added to every runbook.
+- Optional `platform` and `category` filters added before vector ranking.
+- Candidate-count visibility added to `query_runbooks.py`.
 
 ## Why This Matters
 
@@ -119,6 +122,69 @@ This is acceptable because the current knowledge base does not contain a
 log-pipeline or observability-delay runbook. Returning no evidence is safer than
 forcing a weak match into the LLM context.
 
+## Metadata Filtering
+
+Each runbook now starts with TOML front matter:
+
+```toml
++++
+platform = "aws-lambda"
+category = "timeout"
++++
+```
+
+The chunking pipeline parses this once and copies the metadata onto every
+chunk created from that runbook:
+
+```text
+Runbook
+  -> parse TOML metadata
+  -> split Markdown sections
+  -> attach metadata to each chunk
+  -> embed and save in runbook_index.json
+```
+
+At query time, metadata filtering happens before cosine similarity:
+
+```text
+Expanded alert query
+  -> operational signal gate
+  -> optional metadata filter
+  -> query embedding
+  -> cosine similarity over remaining chunks
+  -> min_score filter
+```
+
+Measured example:
+
+```text
+Query: payment processor timeout failure
+
+Without metadata:
+Candidate chunks: 30/30
+Top result: lambda-timeout.md
+
+With platform=aws-lambda:
+Candidate chunks: 5/30
+Top result: lambda-timeout.md
+```
+
+The metadata filter did not improve top-1 accuracy in this example because
+vector search already ranked the correct runbook first. It reduced the candidate
+search space from 30 chunks to 5 and prevented unrelated platforms from
+competing.
+
+Run the comparison:
+
+```powershell
+python .\query_runbooks.py "payment processor timeout failure"
+python .\query_runbooks.py "payment processor timeout failure" --platform aws-lambda
+```
+
+Metadata filtering is optional because incorrect metadata can hide the correct
+runbook. For example, filtering the same Lambda alert with
+`--platform kubernetes` returns no evidence.
+
 ## Important Lesson
 
 Week 2 proved that vector search can retrieve relevant runbook evidence. Week 3
@@ -153,9 +219,12 @@ shows whether the new component helped.
 - The eval set is still synthetic.
 - No reranker or hybrid keyword/vector retrieval has been added yet.
 - Query expansion can overfit if rules are added without failure cases.
+- Incorrect metadata can remove the correct runbook from the candidate set.
+- The signal gate currently recognizes `timeout` but not the phrase
+  `timing out`; metadata is never reached if the alert fails that earlier gate.
 
 ## Next Step
 
-Add more terse cases only when there is a clear target runbook and a real
-retrieval failure. If the knowledge base lacks the needed runbook, add the
-runbook first instead of hiding the gap with expansion rules.
+Add metadata-aware evaluation cases, then decide whether filtering should be
+strict or should fall back to unfiltered retrieval when metadata produces zero
+candidates.

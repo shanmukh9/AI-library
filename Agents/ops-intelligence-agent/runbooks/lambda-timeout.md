@@ -1,3 +1,8 @@
++++
+platform = "aws-lambda"
+category = "timeout"
++++
+
 # Lambda Timeout Runbook
 
 ## Symptoms

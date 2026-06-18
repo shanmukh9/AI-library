@@ -1,3 +1,8 @@
++++
+platform = "aws-rds"
+category = "database"
++++
+
 # RDS Connection Pool Exhaustion Runbook
 
 ## Symptoms

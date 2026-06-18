@@ -1,3 +1,8 @@
++++
+platform = "aws-alb"
+category = "availability"
++++
+
 # ALB 502 and Health Check Runbook
 
 ## Symptoms

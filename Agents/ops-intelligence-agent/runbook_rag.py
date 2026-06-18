@@ -1,5 +1,6 @@
 import json
 import math
+import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -12,6 +13,7 @@ QUERY_EXPANSIONS_PATH = PROJECT_ROOT / "data" / "query_expansions.json"
 EMBEDDINGS_URL = "http://127.0.0.1:1234/v1/embeddings"
 EMBEDDING_MODEL = "text-embedding-nomic-embed-text-v1.5"
 DEFAULT_MIN_SCORE = 0.60
+REQUIRED_METADATA_FIELDS = ("platform", "category")
 
 OPERATIONAL_PROBLEM_SIGNALS = [
     "timeout",
@@ -112,12 +114,33 @@ def split_runbook_sections(markdown_text):
     return [(title, content) for title, content in sections if content]
 
 
+def parse_runbook(markdown_text):
+    if not markdown_text.startswith("+++\n"):
+        raise ValueError("Runbook must start with TOML front matter")
+
+    try:
+        metadata_text, body = markdown_text[4:].split("\n+++\n", maxsplit=1)
+    except ValueError as exc:
+        raise ValueError("Runbook TOML front matter is not closed with +++") from exc
+
+    metadata = tomllib.loads(metadata_text)
+    missing_fields = [
+        field for field in REQUIRED_METADATA_FIELDS if not metadata.get(field)
+    ]
+    if missing_fields:
+        raise ValueError(
+            f"Runbook metadata is missing: {', '.join(missing_fields)}"
+        )
+
+    return metadata, body.lstrip()
+
+
 def load_runbook_chunks(runbook_dir=RUNBOOK_DIR):
     chunks = []
     for path in sorted(runbook_dir.glob("*.md")):
-        text = path.read_text(encoding="utf-8")
-        title = text.splitlines()[0].removeprefix("# ").strip()
-        for section_title, section_text in split_runbook_sections(text):
+        metadata, body = parse_runbook(path.read_text(encoding="utf-8"))
+        title = body.splitlines()[0].removeprefix("# ").strip()
+        for section_title, section_text in split_runbook_sections(body):
             chunks.append(
                 {
                     "id": f"{path.stem}:{section_title.lower().replace(' ', '-')}",
@@ -125,6 +148,7 @@ def load_runbook_chunks(runbook_dir=RUNBOOK_DIR):
                     "runbook": title,
                     "section": section_title,
                     "text": section_text,
+                    "metadata": metadata,
                 }
             )
     return chunks
@@ -157,21 +181,43 @@ def load_runbook_index(index_path=INDEX_PATH):
     return json.loads(index_path.read_text(encoding="utf-8"))
 
 
+def filter_chunks_by_metadata(chunks, metadata_filters=None):
+    if not metadata_filters:
+        return list(chunks)
+
+    return [
+        chunk
+        for chunk in chunks
+        if all(
+            chunk.get("metadata", {}).get(field) == expected_value
+            for field, expected_value in metadata_filters.items()
+        )
+    ]
+
+
 def search_runbooks(
     query,
     top_k=3,
     min_score=DEFAULT_MIN_SCORE,
     index_path=INDEX_PATH,
     use_expansion=True,
+    metadata_filters=None,
 ):
     expanded_query = expand_query_for_retrieval(query) if use_expansion else query
     if not has_operational_problem_signal(expanded_query):
         return []
     index = load_runbook_index(index_path)
+    candidate_chunks = filter_chunks_by_metadata(
+        index["chunks"],
+        metadata_filters=metadata_filters,
+    )
+    if not candidate_chunks:
+        return []
+
     query_embedding = embed_text(expanded_query)
     scored_chunks = []
 
-    for chunk in index["chunks"]:
+    for chunk in candidate_chunks:
         score = cosine_similarity(query_embedding, chunk["embedding"])
         scored_chunks.append(
             {
@@ -180,6 +226,7 @@ def search_runbooks(
                 "runbook": chunk["runbook"],
                 "section": chunk["section"],
                 "text": chunk["text"],
+                "metadata": chunk.get("metadata", {}),
             }
         )
 
@@ -201,6 +248,11 @@ def format_evidence(results):
                 [
                     f"[{index}] {result['runbook']} / {result['section']}",
                     f"source: {result['source']}",
+                    (
+                        "metadata: "
+                        f"platform={result['metadata'].get('platform', 'unknown')}, "
+                        f"category={result['metadata'].get('category', 'unknown')}"
+                    ),
                     f"similarity: {result['score']:.4f}",
                     result["text"],
                 ]

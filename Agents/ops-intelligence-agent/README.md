@@ -296,3 +296,25 @@ The important lesson is restraint: `logs delayed` still returns no evidence
 because the project does not yet contain a log-pipeline runbook. Missing
 knowledge should be fixed by adding the right runbook, not by forcing a weak
 retrieval match.
+
+### Metadata Filtering
+
+Runbooks also carry TOML metadata such as:
+
+```toml
++++
+platform = "aws-lambda"
+category = "timeout"
++++
+```
+
+Use optional metadata filters to narrow the candidate set before cosine
+similarity ranking:
+
+```powershell
+python .\query_runbooks.py "payment processor timeout failure" --platform aws-lambda
+```
+
+Measured locally, the platform filter reduced the search space from `30` chunks
+to `5` while preserving the correct Lambda runbook as top-1. Filters are
+optional because incorrect metadata can hide the correct evidence.
