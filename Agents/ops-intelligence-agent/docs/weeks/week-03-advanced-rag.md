@@ -23,6 +23,8 @@ Improve retrieval quality with a measured baseline-versus-improved comparison.
 - TOML metadata added to every runbook.
 - Optional `platform` and `category` filters added before vector ranking.
 - Candidate-count visibility added to `query_runbooks.py`.
+- Strict and observable fallback metadata policies added.
+- Metadata policy evaluator added in `evaluate_metadata_filtering.py`.
 
 ## Why This Matters
 
@@ -185,6 +187,69 @@ Metadata filtering is optional because incorrect metadata can hide the correct
 runbook. For example, filtering the same Lambda alert with
 `--platform kubernetes` returns no evidence.
 
+## Strict Versus Fallback Metadata
+
+Strict mode fully trusts supplied metadata:
+
+```powershell
+python .\query_runbooks.py "payment processor timeout failure" `
+  --platform kubernetes `
+  --metadata-mode strict
+```
+
+Result:
+
+```text
+Candidate chunks: 5/30
+Metadata fallback used: no
+No retrieved runbook evidence.
+```
+
+Fallback mode retries unfiltered retrieval when the metadata-filtered search
+produces no usable evidence:
+
+```powershell
+python .\query_runbooks.py "payment processor timeout failure" `
+  --platform kubernetes `
+  --metadata-mode fallback
+```
+
+Result:
+
+```text
+Candidate chunks: 30/30
+Metadata fallback used: yes
+Top result: lambda-timeout.md
+```
+
+Fallback activates in two situations:
+
+```text
+1. Metadata matches zero chunks.
+2. Metadata matches chunks, but none pass min_score.
+```
+
+The same query embedding is reused during fallback. The system does not make a
+second embedding-model request.
+
+Evaluate both policies:
+
+```powershell
+python .\evaluate_metadata_filtering.py
+```
+
+Measured locally:
+
+```text
+Strict policy:   3/3 expected behaviors
+Fallback policy: 3/3 expected behaviors
+Expanded RAG:    11/11 positive, 2/2 negative
+```
+
+Fallback is more resilient, but it should never be silent. The CLI reports
+`Metadata fallback used: yes` because the final evidence no longer obeys the
+original metadata constraint.
+
 ## Important Lesson
 
 Week 2 proved that vector search can retrieve relevant runbook evidence. Week 3
@@ -220,11 +285,12 @@ shows whether the new component helped.
 - No reranker or hybrid keyword/vector retrieval has been added yet.
 - Query expansion can overfit if rules are added without failure cases.
 - Incorrect metadata can remove the correct runbook from the candidate set.
+- Fallback can retrieve evidence outside the supplied platform, so callers must
+  expose that fallback occurred.
 - The signal gate currently recognizes `timeout` but not the phrase
   `timing out`; metadata is never reached if the alert fails that earlier gate.
 
 ## Next Step
 
-Add metadata-aware evaluation cases, then decide whether filtering should be
-strict or should fall back to unfiltered retrieval when metadata produces zero
-candidates.
+Add a lightweight reranking experiment that compares raw vector order with a
+second-stage ranking rule, while preserving the current evaluation baselines.

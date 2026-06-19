@@ -318,3 +318,31 @@ python .\query_runbooks.py "payment processor timeout failure" --platform aws-la
 Measured locally, the platform filter reduced the search space from `30` chunks
 to `5` while preserving the correct Lambda runbook as top-1. Filters are
 optional because incorrect metadata can hide the correct evidence.
+
+Choose strict or fallback metadata behavior:
+
+```powershell
+python .\query_runbooks.py "payment processor timeout failure" `
+  --platform kubernetes `
+  --metadata-mode strict
+
+python .\query_runbooks.py "payment processor timeout failure" `
+  --platform kubernetes `
+  --metadata-mode fallback
+```
+
+Fallback mode retries all chunks when filtered candidates are empty or when
+none pass `min_score`. It explicitly prints when fallback was used.
+
+Evaluate the policy:
+
+```powershell
+python .\evaluate_metadata_filtering.py
+```
+
+Measured locally:
+
+```text
+Strict policy:   3/3 expected behaviors
+Fallback policy: 3/3 expected behaviors
+```

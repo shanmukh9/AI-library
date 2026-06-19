@@ -195,6 +195,23 @@ def filter_chunks_by_metadata(chunks, metadata_filters=None):
     ]
 
 
+def select_candidate_chunks(
+    chunks,
+    metadata_filters=None,
+    fallback_on_empty=True,
+):
+    filtered_chunks = filter_chunks_by_metadata(
+        chunks,
+        metadata_filters=metadata_filters,
+    )
+    fallback_used = bool(
+        metadata_filters and not filtered_chunks and fallback_on_empty
+    )
+    if fallback_used:
+        return list(chunks), True
+    return filtered_chunks, False
+
+
 def search_runbooks(
     query,
     top_k=3,
@@ -202,39 +219,62 @@ def search_runbooks(
     index_path=INDEX_PATH,
     use_expansion=True,
     metadata_filters=None,
+    metadata_fallback=True,
 ):
     expanded_query = expand_query_for_retrieval(query) if use_expansion else query
     if not has_operational_problem_signal(expanded_query):
         return []
     index = load_runbook_index(index_path)
-    candidate_chunks = filter_chunks_by_metadata(
+    candidate_chunks, fallback_used = select_candidate_chunks(
         index["chunks"],
         metadata_filters=metadata_filters,
+        fallback_on_empty=metadata_fallback,
     )
     if not candidate_chunks:
         return []
 
     query_embedding = embed_text(expanded_query)
-    scored_chunks = []
 
-    for chunk in candidate_chunks:
-        score = cosine_similarity(query_embedding, chunk["embedding"])
-        scored_chunks.append(
-            {
-                "score": score,
-                "source": chunk["source"],
-                "runbook": chunk["runbook"],
-                "section": chunk["section"],
-                "text": chunk["text"],
-                "metadata": chunk.get("metadata", {}),
-            }
+    def rank_chunks(chunks):
+        scored_chunks = []
+        for chunk in chunks:
+            score = cosine_similarity(query_embedding, chunk["embedding"])
+            scored_chunks.append(
+                {
+                    "score": score,
+                    "source": chunk["source"],
+                    "runbook": chunk["runbook"],
+                    "section": chunk["section"],
+                    "text": chunk["text"],
+                    "metadata": chunk.get("metadata", {}),
+                }
+            )
+
+        ranked_chunks = sorted(
+            scored_chunks,
+            key=lambda item: item["score"],
+            reverse=True,
         )
+        return [
+            chunk
+            for chunk in ranked_chunks
+            if min_score is None or chunk["score"] >= min_score
+        ][:top_k]
 
-    ranked_chunks = sorted(scored_chunks, key=lambda item: item["score"], reverse=True)
-    filtered_chunks = [
-        chunk for chunk in ranked_chunks if min_score is None or chunk["score"] >= min_score
-    ]
-    return filtered_chunks[:top_k]
+    results = rank_chunks(candidate_chunks)
+    should_retry_unfiltered = (
+        metadata_filters
+        and metadata_fallback
+        and not results
+        and len(candidate_chunks) < len(index["chunks"])
+    )
+    if should_retry_unfiltered:
+        results = rank_chunks(index["chunks"])
+        fallback_used = True
+
+    for result in results:
+        result["metadata_fallback_used"] = fallback_used
+    return results
 
 
 def format_evidence(results):
