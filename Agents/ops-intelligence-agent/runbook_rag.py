@@ -14,6 +14,23 @@ EMBEDDINGS_URL = "http://127.0.0.1:1234/v1/embeddings"
 EMBEDDING_MODEL = "text-embedding-nomic-embed-text-v1.5"
 DEFAULT_MIN_SCORE = 0.60
 REQUIRED_METADATA_FIELDS = ("platform", "category")
+INTENT_RULES = {
+    "cause": {
+        "keywords": ("cause", "caused", "why", "reason", "root cause"),
+        "section": "Probable Causes",
+        "bonus": 0.13,
+    },
+    "action": {
+        "keywords": ("fix", "resolve", "remediate", "immediate", "action"),
+        "section": "Immediate Actions",
+        "bonus": 0.10,
+    },
+    "symptom": {
+        "keywords": ("symptom", "confirm", "sign", "indicate"),
+        "section": "Symptoms",
+        "bonus": 0.05,
+    },
+}
 
 OPERATIONAL_PROBLEM_SIGNALS = [
     "timeout",
@@ -212,6 +229,64 @@ def select_candidate_chunks(
     return filtered_chunks, False
 
 
+def detect_query_intents(query):
+    normalized_query = query.lower()
+    return [
+        intent
+        for intent, rule in INTENT_RULES.items()
+        if any(keyword in normalized_query for keyword in rule["keywords"])
+    ]
+
+
+def detect_query_intent(query):
+    intents = detect_query_intents(query)
+    return intents[0] if intents else None
+
+
+def rerank_by_intent(query, results):
+    intents = detect_query_intents(query)
+    if not intents:
+        return [
+            {
+                **result,
+                "rerank_intent": None,
+                "rerank_bonus": 0.0,
+                "score": result["similarity_score"],
+            }
+            for result in results
+        ]
+
+    leading_source = max(
+        results,
+        key=lambda item: item["similarity_score"],
+    )["source"]
+    reranked_results = []
+    for result in results:
+        matched_intents = [
+            intent
+            for intent in intents
+            if (
+                result["source"] == leading_source
+                and result["section"] == INTENT_RULES[intent]["section"]
+            )
+        ]
+        bonus = sum(INTENT_RULES[intent]["bonus"] for intent in matched_intents)
+        reranked_results.append(
+            {
+                **result,
+                "rerank_intent": ",".join(intents),
+                "rerank_bonus": bonus,
+                "rerank_source": leading_source,
+                "score": result["similarity_score"] + bonus,
+            }
+        )
+    return sorted(
+        reranked_results,
+        key=lambda item: item["score"],
+        reverse=True,
+    )
+
+
 def search_runbooks(
     query,
     top_k=3,
@@ -220,6 +295,8 @@ def search_runbooks(
     use_expansion=True,
     metadata_filters=None,
     metadata_fallback=True,
+    use_reranking=False,
+    reranking_query=None,
 ):
     expanded_query = expand_query_for_retrieval(query) if use_expansion else query
     if not has_operational_problem_signal(expanded_query):
@@ -238,10 +315,16 @@ def search_runbooks(
     def rank_chunks(chunks):
         scored_chunks = []
         for chunk in chunks:
-            score = cosine_similarity(query_embedding, chunk["embedding"])
+            similarity_score = cosine_similarity(
+                query_embedding,
+                chunk["embedding"],
+            )
             scored_chunks.append(
                 {
-                    "score": score,
+                    "score": similarity_score,
+                    "similarity_score": similarity_score,
+                    "rerank_intent": None,
+                    "rerank_bonus": 0.0,
                     "source": chunk["source"],
                     "runbook": chunk["runbook"],
                     "section": chunk["section"],
@@ -258,8 +341,8 @@ def search_runbooks(
         return [
             chunk
             for chunk in ranked_chunks
-            if min_score is None or chunk["score"] >= min_score
-        ][:top_k]
+            if min_score is None or chunk["similarity_score"] >= min_score
+        ]
 
     results = rank_chunks(candidate_chunks)
     should_retry_unfiltered = (
@@ -271,6 +354,13 @@ def search_runbooks(
     if should_retry_unfiltered:
         results = rank_chunks(index["chunks"])
         fallback_used = True
+
+    if use_reranking:
+        results = rerank_by_intent(
+            reranking_query or expanded_query,
+            results,
+        )
+    results = results[:top_k]
 
     for result in results:
         result["metadata_fallback_used"] = fallback_used
@@ -293,7 +383,15 @@ def format_evidence(results):
                         f"platform={result['metadata'].get('platform', 'unknown')}, "
                         f"category={result['metadata'].get('category', 'unknown')}"
                     ),
-                    f"similarity: {result['score']:.4f}",
+                    f"similarity: {result.get('similarity_score', result['score']):.4f}",
+                    (
+                        "reranking: "
+                        f"intent={result.get('rerank_intent') or 'none'}, "
+                        f"source={result.get('rerank_source', 'none')}, "
+                        f"bonus={result.get('rerank_bonus', 0.0):.2f}, "
+                        f"vector={result.get('similarity_score', result['score']):.4f}, "
+                        f"final={result['score']:.4f}"
+                    ),
                     result["text"],
                 ]
             )

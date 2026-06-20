@@ -346,3 +346,52 @@ Measured locally:
 Strict policy:   3/3 expected behaviors
 Fallback policy: 3/3 expected behaviors
 ```
+
+### Intent-Aware Reranking
+
+Vector similarity retrieves relevant evidence. Optional reranking then adjusts
+the order based on whether the query asks for causes, actions, or symptoms.
+
+Compare modes:
+
+```powershell
+python .\query_runbooks.py `
+  "What should I do immediately for the Lambda timeout failure?" `
+  --platform aws-lambda `
+  --ranking vector
+
+python .\query_runbooks.py `
+  "What should I do immediately for the Lambda timeout failure?" `
+  --platform aws-lambda `
+  --ranking reranked
+```
+
+Evaluate:
+
+```powershell
+python .\evaluate_reranking.py
+```
+
+Measured locally:
+
+```text
+Vector-only intent Top-1: 1/3
+Reranked intent Top-1:    3/3
+```
+
+The rerank bonus changes ordering only after the original vector similarity
+passes `min_score`; it cannot promote rejected evidence.
+
+`basic_chain.py` enables reranking and sends the final Top 3 evidence chunks to
+the chat model. The original alert remains the embedding query, while the
+reranker separately receives the downstream task intent: root-cause analysis
+and immediate action.
+
+Bonuses are limited to the runbook with the strongest original vector match so
+an unrelated source cannot win merely because it has a preferred section name.
+
+Measured end to end:
+
+```text
+Selected P1 severity matches with reranked evidence: 3/3
+```

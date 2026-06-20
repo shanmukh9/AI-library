@@ -105,8 +105,13 @@ for alert_index in test_alert_ids:
     try:
         retrieved_evidence = search_runbooks(
             alert["text"],
-            top_k=2,
+            top_k=3,
             min_score=DEFAULT_MIN_SCORE,
+            use_reranking=True,
+            reranking_query=(
+                f"{alert['text']} "
+                "Identify the root cause and recommend an immediate action."
+            ),
         )
         evidence_text = format_evidence(retrieved_evidence)
     except (FileNotFoundError, RuntimeError) as exc:
@@ -136,7 +141,10 @@ for alert_index in test_alert_ids:
         print(
             "Top evidence: "
             f"{top['source']} / {top['section']} "
-            f"(score={top['score']:.4f})"
+            f"(vector={top['similarity_score']:.4f}, "
+            f"bonus={top['rerank_bonus']:.2f}, "
+            f"final={top['score']:.4f}, "
+            f"intent={top['rerank_intent'] or 'none'})"
         )
     else:
         print("Top evidence: none")

@@ -25,6 +25,9 @@ Improve retrieval quality with a measured baseline-versus-improved comparison.
 - Candidate-count visibility added to `query_runbooks.py`.
 - Strict and observable fallback metadata policies added.
 - Metadata policy evaluator added in `evaluate_metadata_filtering.py`.
+- Optional intent-aware section reranking added.
+- Vector-only versus reranked evaluation added in `evaluate_reranking.py`.
+- Reranked Top 3 evidence integrated into `basic_chain.py`.
 
 ## Why This Matters
 
@@ -250,6 +253,97 @@ Fallback is more resilient, but it should never be silent. The CLI reports
 `Metadata fallback used: yes` because the final evidence no longer obeys the
 original metadata constraint.
 
+## Intent-Aware Reranking
+
+Vector similarity finds semantically related chunks, but it may not rank the
+section that best answers the user's question.
+
+Measured Lambda examples before reranking:
+
+```text
+Cause question   -> Overview ranked above Probable Causes
+Action question  -> Overview ranked above Immediate Actions
+Symptom question -> Symptoms already ranked first
+```
+
+The lightweight reranker detects three intents:
+
+```text
+cause   -> boost Probable Causes by 0.13
+action  -> boost Immediate Actions by 0.10
+symptom -> boost Symptoms by 0.05
+```
+
+The original vector similarity must pass `min_score=0.60` before a bonus is
+applied. Reranking can reorder grounded evidence, but it cannot rescue a weak
+chunk that failed the retrieval threshold.
+
+Action-query example:
+
+```text
+Overview:
+vector = 0.8052
+bonus  = 0.00
+final  = 0.8052
+
+Immediate Actions:
+vector = 0.7074
+bonus  = 0.10
+final  = 0.8074
+```
+
+Compare both modes:
+
+```powershell
+python .\query_runbooks.py `
+  "What should I do immediately for the Lambda timeout failure?" `
+  --platform aws-lambda `
+  --ranking vector
+
+python .\query_runbooks.py `
+  "What should I do immediately for the Lambda timeout failure?" `
+  --platform aws-lambda `
+  --ranking reranked
+```
+
+Evaluate reranking:
+
+```powershell
+python .\evaluate_reranking.py
+```
+
+Measured locally:
+
+```text
+Vector-only intent Top-1: 1/3
+Reranked intent Top-1:    3/3
+Expanded RAG:             11/11 positive, 2/2 negative
+Metadata policies:        3/3 strict, 3/3 fallback
+```
+
+### Main LLM Chain Integration
+
+The main chain keeps retrieval meaning and downstream task intent separate:
+
+```text
+Embedding query: original alert text
+Reranking task:  identify root cause and recommend immediate action
+```
+
+It now requests the final Top 3 reranked chunks and sends them to the chat
+model. Bonuses apply only to sections from the runbook with the strongest
+original vector match. This prevents a well-labelled section from an unrelated
+runbook from overtaking the correct source.
+
+End-to-end local result:
+
+```text
+CPU saturation:    P1 match
+Lambda timeout:    P1 match
+Kubernetes OOM:    P1 match
+Severity matches:  3/3
+```
+
 ## Important Lesson
 
 Week 2 proved that vector search can retrieve relevant runbook evidence. Week 3
@@ -282,7 +376,9 @@ shows whether the new component helped.
 
 - The expansion rules are hand-written and small.
 - The eval set is still synthetic.
-- No reranker or hybrid keyword/vector retrieval has been added yet.
+- The reranker uses small hand-written intent rules and section bonuses.
+- No hybrid keyword/vector retrieval or learned cross-encoder reranker has been
+  added yet.
 - Query expansion can overfit if rules are added without failure cases.
 - Incorrect metadata can remove the correct runbook from the candidate set.
 - Fallback can retrieve evidence outside the supplied platform, so callers must
@@ -292,5 +388,6 @@ shows whether the new component helped.
 
 ## Next Step
 
-Add a lightweight reranking experiment that compares raw vector order with a
-second-stage ranking rule, while preserving the current evaluation baselines.
+Improve the operational signal gate for controlled wording variations such as
+`timeout`, `timed out`, and `timing out`, then run the complete Week 3
+evaluation before closure.

@@ -24,6 +24,12 @@ parser.add_argument(
     default="fallback",
     help="Fallback retries all chunks when metadata finds no candidates.",
 )
+parser.add_argument(
+    "--ranking",
+    choices=["vector", "reranked"],
+    default="vector",
+    help="Optionally rerank vector results using detected query intent.",
+)
 args = parser.parse_args()
 
 query = " ".join(args.query).strip()
@@ -51,6 +57,7 @@ results = search_runbooks(
     min_score=DEFAULT_MIN_SCORE,
     metadata_filters=metadata_filters,
     metadata_fallback=args.metadata_mode == "fallback",
+    use_reranking=args.ranking == "reranked",
 )
 fallback_used = bool(results and results[0].get("metadata_fallback_used"))
 if fallback_used:
@@ -68,5 +75,6 @@ if metadata_filters:
     print(f"Metadata fallback used: {'yes' if fallback_used else 'no'}")
 print(f"Candidate chunks: {len(candidate_chunks)}/{len(index['chunks'])}")
 print(f"Minimum similarity: {DEFAULT_MIN_SCORE:.2f}")
+print(f"Ranking mode: {args.ranking}")
 print()
 print(format_evidence(results))
