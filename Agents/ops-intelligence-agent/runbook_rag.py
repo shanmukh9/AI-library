@@ -1,5 +1,6 @@
 import json
 import math
+import re
 import tomllib
 import urllib.error
 import urllib.request
@@ -51,8 +52,28 @@ OPERATIONAL_PROBLEM_SIGNALS = [
     "expires",
 ]
 
+OPERATIONAL_SIGNAL_NORMALIZATIONS = [
+    (r"\btimed[\s-]+out\b", "timeout"),
+    (r"\btiming[\s-]+out\b", "timeout"),
+    (r"\btimes[\s-]+out\b", "timeout"),
+    (r"\btime[\s-]+out\b", "timeout"),
+]
+
+
+def normalize_operational_signals(query):
+    normalized_query = query
+    for pattern, replacement in OPERATIONAL_SIGNAL_NORMALIZATIONS:
+        normalized_query = re.sub(
+            pattern,
+            replacement,
+            normalized_query,
+            flags=re.IGNORECASE,
+        )
+    return normalized_query
+
+
 def has_operational_problem_signal(query):
-    normalized_query = query.lower()
+    normalized_query = normalize_operational_signals(query).lower()
     return any(signal in normalized_query for signal in OPERATIONAL_PROBLEM_SIGNALS)
 
 
@@ -299,7 +320,8 @@ def search_runbooks(
     reranking_query=None,
 ):
     expanded_query = expand_query_for_retrieval(query) if use_expansion else query
-    if not has_operational_problem_signal(expanded_query):
+    normalized_query = normalize_operational_signals(expanded_query)
+    if not has_operational_problem_signal(normalized_query):
         return []
     index = load_runbook_index(index_path)
     candidate_chunks, fallback_used = select_candidate_chunks(
@@ -310,7 +332,7 @@ def search_runbooks(
     if not candidate_chunks:
         return []
 
-    query_embedding = embed_text(expanded_query)
+    query_embedding = embed_text(normalized_query)
 
     def rank_chunks(chunks):
         scored_chunks = []
@@ -357,7 +379,7 @@ def search_runbooks(
 
     if use_reranking:
         results = rerank_by_intent(
-            reranking_query or expanded_query,
+            reranking_query or normalized_query,
             results,
         )
     results = results[:top_k]

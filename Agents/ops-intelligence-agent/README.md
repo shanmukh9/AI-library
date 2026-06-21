@@ -12,15 +12,15 @@ Start with the [Week 1 retrospective](docs/weeks/week-01-llm-foundations.md).
 
 Open the [OIA Visual Operating System](docs/visuals/week2-rag-motion.html)
 in a browser to move week by week through the project. It currently visualizes
-the Week 1 LLM baseline, Week 2 Runbook RAG layer, and Week 3 query-expansion
-layer, including signal gating, embeddings, cosine similarity, `min_score`,
-retrieved evidence, severity policy, and JSON output.
+the Week 1 LLM baseline, Week 2 Runbook RAG layer, and complete Week 3
+advanced-retrieval pipeline, including normalization, expansion, metadata,
+fallback, reranking, and the grounded LLM chain.
 
 ## Current Status
 
 - Week 1: local structured alert analysis baseline complete.
 - Week 2: runbook RAG baseline complete locally.
-- Week 3: deterministic query expansion measured against baseline retrieval.
+- Week 3: advanced RAG complete locally.
 
 ## Week 1 Baseline
 
@@ -297,6 +297,37 @@ because the project does not yet contain a log-pipeline runbook. Missing
 knowledge should be fixed by adding the right runbook, not by forcing a weak
 retrieval match.
 
+### Operational Signal Normalization
+
+Controlled normalization canonicalizes equivalent failure wording before the
+signal gate and embedding call:
+
+```text
+timed out
+timing out
+time out
+times out
+timed-out
+    -> timeout
+```
+
+This preserves known meaning. It does not guess that vague wording such as
+`lambda acting weird` means a timeout.
+
+Evaluate the gate without calling LM Studio:
+
+```powershell
+python .\evaluate_signal_gate.py
+```
+
+Measured locally:
+
+```text
+Signal gate cases: 10/10
+Timeout variants:  6/6 passed
+Vague/normal text: 4/4 rejected
+```
+
 ### Metadata Filtering
 
 Runbooks also carry TOML metadata such as:
@@ -394,4 +425,15 @@ Measured end to end:
 
 ```text
 Selected P1 severity matches with reranked evidence: 3/3
+```
+
+Week 3 regression summary:
+
+```text
+Signal normalization:     10/10
+Expanded retrieval:       11/11
+Negative no-match:        2/2
+Metadata strict/fallback: 3/3 and 3/3
+Intent reranking:         1/3 -> 3/3
+End-to-end severity:      3/3
 ```

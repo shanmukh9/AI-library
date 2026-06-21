@@ -20,6 +20,8 @@
       --red: #ff6b5f;
       --shadow: 0 28px 70px rgba(0, 0, 0, 0.42);
       --radius: 18px;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.22, 1.35, 0.36, 1);
     }
 
     * {
@@ -229,6 +231,7 @@
     .mission {
       padding: 22px;
       animation: panelEnter 360ms ease both;
+      view-transition-name: mission-panel;
     }
 
     .badge-row {
@@ -414,6 +417,99 @@
       display: grid;
       gap: 14px;
       align-content: start;
+      view-transition-name: architecture-panel;
+      position: sticky;
+      top: 18px;
+      max-height: calc(100vh - 36px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      scrollbar-color: rgba(0, 210, 255, 0.35) rgba(255,255,255,0.035);
+      scrollbar-width: thin;
+    }
+
+    .architecture::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .architecture::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.025);
+    }
+
+    .architecture::-webkit-scrollbar-thumb {
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background: rgba(0, 210, 255, 0.32);
+      background-clip: padding-box;
+    }
+
+    .flow-monitor {
+      display: grid;
+      grid-template-columns: auto minmax(120px, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid rgba(0, 210, 255, 0.18);
+      border-radius: 12px;
+      background: rgba(0, 210, 255, 0.045);
+    }
+
+    .flow-monitor strong {
+      color: var(--blue);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .flow-monitor span {
+      color: var(--muted);
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .monitor-replay {
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(0, 210, 255, 0.25);
+      border-radius: 8px;
+      color: #fff;
+      background: rgba(0, 210, 255, 0.08);
+      font-size: 9px;
+      font-weight: 850;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition:
+        transform 180ms var(--ease-spring),
+        background 180ms ease,
+        border-color 180ms ease;
+    }
+
+    .monitor-replay:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(0,210,255,0.5);
+      background: rgba(0,210,255,0.15);
+    }
+
+    .monitor-replay:disabled {
+      opacity: 0.45;
+      cursor: wait;
+    }
+
+    .flow-progress {
+      position: relative;
+      height: 4px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+    }
+
+    .flow-progress-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--blue), var(--purple));
+      box-shadow: 0 0 14px rgba(0, 210, 255, 0.45);
+      transition: width 420ms var(--ease-out);
     }
 
     .scenario-row {
@@ -431,12 +527,25 @@
       font-size: 11px;
       font-weight: 850;
       cursor: pointer;
+      transition:
+        color 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease,
+        transform 180ms var(--ease-spring),
+        box-shadow 180ms ease;
+    }
+
+    .scenario-btn:hover {
+      color: #fff;
+      transform: translateY(-2px);
+      border-color: rgba(0,210,255,0.3);
     }
 
     .scenario-btn.active {
       color: #fff;
       border-color: rgba(0,210,255,0.35);
       background: rgba(0,210,255,0.12);
+      box-shadow: 0 0 20px rgba(0,210,255,0.14);
     }
 
     .flow-stack {
@@ -473,7 +582,14 @@
       border-radius: 12px;
       background: var(--panel-2);
       border: 1px solid rgba(255,255,255,0.07);
-      transition: border-color 180ms ease, background 180ms ease, opacity 180ms ease, transform 180ms ease;
+      transform-origin: center;
+      will-change: transform, opacity;
+      transition:
+        border-color 220ms ease,
+        background 220ms ease,
+        opacity 220ms ease,
+        transform 280ms var(--ease-spring),
+        box-shadow 220ms ease;
     }
 
     .engine-node.online {
@@ -483,8 +599,50 @@
     .engine-node.active {
       border-color: var(--blue);
       background: rgba(0, 210, 255, 0.055);
-      box-shadow: 0 0 18px rgba(0, 210, 255, 0.15);
-      transform: translateX(2px);
+      box-shadow: 0 0 18px rgba(0, 210, 255, 0.12);
+    }
+
+    .engine-node:hover:not(.locked) {
+      transform: translateX(4px) translateY(-2px);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28), 0 0 24px rgba(0,210,255,0.12);
+    }
+
+    .engine-node.queued {
+      opacity: 0.58;
+      transform: translateX(-4px) scale(0.992);
+    }
+
+    .engine-node.processing {
+      z-index: 2;
+      opacity: 1;
+      border-color: var(--blue);
+      background: rgba(0, 210, 255, 0.1);
+      box-shadow:
+        0 0 0 1px rgba(0, 210, 255, 0.2),
+        0 0 34px rgba(0, 210, 255, 0.28);
+      transform: translateX(8px) scale(1.012);
+    }
+
+    .engine-node.processing::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.16) 48%, transparent 76%);
+      transform: translateX(-120%);
+      animation: nodeScan 760ms ease-out both;
+      pointer-events: none;
+    }
+
+    .engine-node.completed {
+      border-color: rgba(61, 220, 132, 0.5);
+      background: rgba(61, 220, 132, 0.07);
+      box-shadow: 0 0 18px rgba(61, 220, 132, 0.1);
+    }
+
+    .engine-node.completed .icon {
+      color: var(--green);
+      background: rgba(61,220,132,0.12);
     }
 
     .engine-node.playing {
@@ -536,10 +694,12 @@
     }
 
     .connector {
+      position: relative;
       width: 2px;
       height: 12px;
       margin-left: 29px;
       background: rgba(255,255,255,0.08);
+      overflow: visible;
     }
 
     .connector.live {
@@ -554,6 +714,24 @@
       inset: -12px 0;
       background: linear-gradient(transparent, var(--blue), transparent);
       animation: connectorFlow 1.4s linear infinite;
+    }
+
+    .connector.transmitting::before {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      top: -2px;
+      left: 50%;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow:
+        0 0 7px var(--blue),
+        0 0 18px var(--blue),
+        0 0 28px var(--purple);
+      transform: translate(-50%, 0);
+      animation: dataPacket 360ms var(--ease-out) both;
     }
 
     .footer {
@@ -575,6 +753,18 @@
       font-size: 12px;
       font-weight: 800;
       cursor: pointer;
+      transition:
+        transform 180ms var(--ease-spring),
+        border-color 180ms ease,
+        background 180ms ease,
+        box-shadow 180ms ease;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: rgba(0,210,255,0.3);
+      background: rgba(0,210,255,0.08);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.24);
     }
 
     .nav-btn:disabled {
@@ -598,9 +788,9 @@
     }
 
     @keyframes nodeIgnite {
-      0% { opacity: 0.38; transform: translateX(-8px) scale(0.985); }
-      45% { opacity: 1; transform: translateX(6px) scale(1.01); box-shadow: 0 0 28px rgba(0, 210, 255, 0.34); }
-      100% { opacity: 1; transform: translateX(2px) scale(1); }
+      0% { opacity: 0.38; transform: translateX(-8px) scale(0.985); filter: blur(3px); }
+      45% { opacity: 1; transform: translateX(7px) scale(1.012); filter: blur(0); }
+      100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
     }
 
     @keyframes connectorFlow {
@@ -612,6 +802,51 @@
     @keyframes scoreGrow {
       from { transform: scaleX(0); opacity: 0.35; }
       to { transform: scaleX(1); opacity: 1; }
+    }
+
+    @keyframes nodeScan {
+      from { transform: translateX(-120%); opacity: 0; }
+      30% { opacity: 1; }
+      to { transform: translateX(120%); opacity: 0; }
+    }
+
+    @keyframes dataPacket {
+      0% { transform: translate(-50%, -4px) scale(0.55); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translate(-50%, 12px) scale(1); opacity: 0; }
+    }
+
+    @keyframes titleResolve {
+      from { opacity: 0; transform: translateY(16px); filter: blur(7px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    .mission-title {
+      animation: titleResolve 620ms var(--ease-out) both;
+    }
+
+    .module .item {
+      animation: panelEnter 480ms var(--ease-out) both;
+    }
+
+    .module .item:nth-child(2) { animation-delay: 45ms; }
+    .module .item:nth-child(3) { animation-delay: 90ms; }
+    .module .item:nth-child(4) { animation-delay: 135ms; }
+    .module .item:nth-child(5) { animation-delay: 180ms; }
+    .module .item:nth-child(6) { animation-delay: 225ms; }
+
+    ::view-transition-old(mission-panel),
+    ::view-transition-old(architecture-panel) {
+      animation: panelExit 180ms ease both;
+    }
+
+    ::view-transition-new(mission-panel),
+    ::view-transition-new(architecture-panel) {
+      animation: panelEnter 420ms var(--ease-out) both;
+    }
+
+    @keyframes panelExit {
+      to { opacity: 0; transform: translateY(-6px) scale(0.99); filter: blur(4px); }
     }
 
     .footer span {
@@ -665,6 +900,21 @@
       .score-row strong {
         white-space: nowrap;
       }
+
+      .flow-monitor {
+        grid-template-columns: 1fr auto auto;
+      }
+
+      .flow-progress {
+        grid-column: 1 / -1;
+        grid-row: 2;
+      }
+
+      .architecture {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -712,6 +962,12 @@
           <button class="scenario-btn active" data-scenario="vector" type="button">Vector only</button>
           <button class="scenario-btn" data-scenario="reranked" type="button">Reranked</button>
           <button class="scenario-btn" data-scenario="fallback" type="button">Fallback</button>
+        </div>
+        <div class="flow-monitor" aria-live="polite">
+          <strong id="flowState">Ready to replay</strong>
+          <div class="flow-progress"><div class="flow-progress-fill" id="flowProgress"></div></div>
+          <span id="flowCounter">0 / 0</span>
+          <button class="monitor-replay" id="flowReplayBtn" type="button">Run flow</button>
         </div>
         <div class="flow-stack" id="architectureStack"></div>
       </aside>
@@ -778,8 +1034,9 @@
         phase: "Advanced RAG",
         title: "Expansion, Metadata Control, and Intent-Aware Reranking",
         status: "Complete",
-        concept: "Week 3 makes retrieval adaptive and explainable. Terse alerts are expanded, metadata narrows the candidate pool, observable fallback recovers from bad metadata, and intent-aware reranking moves the most useful valid section to the top before the final Top 3 reaches Gemma.",
+        concept: "Week 3 makes retrieval adaptive and explainable. Equivalent failure phrases are normalized, terse alerts are expanded, metadata narrows the candidate pool, observable fallback recovers from bad metadata, and intent-aware reranking moves the most useful valid section to the top before the final Top 3 reaches Gemma.",
         built: [
+          "signal normalization - timed out / timing out -> timeout",
           "data/query_expansions.json - controlled operational aliases",
           "TOML runbook metadata - platform and category",
           "strict/fallback metadata policy with visible recovery",
@@ -788,14 +1045,15 @@
           "basic_chain.py - reranked Top 3 sent to local Gemma"
         ],
         metrics: [
+          "Signal gate: 10/10",
           "Expanded retrieval: 11/11",
           "Negative no-match: 2/2",
           "Metadata policies: 3/3 + 3/3",
           "Intent Top-1: 1/3 -> 3/3",
           "Reranked severity: 3/3"
         ],
-        talking: "I improved retrieval in stages: expansion clarifies terse alerts, metadata narrows where we search, fallback recovers visibly when metadata is wrong, and reranking chooses the section that best answers the task. The final Top 3 reranked evidence now grounds the main local LLM chain.",
-        nodes: ["query-rewriter", "signal-gate", "metadata-filter", "metadata-fallback", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"]
+        talking: "I improved retrieval in stages: normalization unifies equivalent failure wording, expansion clarifies controlled shorthand, metadata narrows where we search, fallback recovers visibly when metadata is wrong, and reranking chooses the section that best answers the task. The final Top 3 reranked evidence now grounds the main local LLM chain.",
+        nodes: ["query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "metadata-fallback", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"]
       },
       {n:4, phase:"Advanced RAG", title:"Architecture Decisions", status:"Planned", concept:"Document when to use simple vector search, hybrid search, routing, or graph-style retrieval.", built:["ADR notes", "retrieval tradeoff map"], metrics:["Decision clarity", "Latency notes"], talking:"I will justify architecture choices instead of blindly adding frameworks.", nodes:["rag-router"]},
       {n:5, phase:"Agent Core", title:"Tool Calling and Typed Outputs", status:"Planned", concept:"Move from recommendations to safe typed tool requests with strict schemas.", built:["typed response schema", "read-only simulated tools"], metrics:["Schema validation pass rate"], talking:"Operations tools need contracts, not loose text.", nodes:["tool-schema", "tools"]},
@@ -811,6 +1069,7 @@
     const architectureNodes = [
       {id:"alert-input", phase:"Input", label:"Alert Input", sub:"Raw operational signal", week:1, icon:"IN"},
       {id:"query-rewriter", phase:"Query Understanding", label:"Query Expansion", sub:"Known shorthand becomes operational language", week:3, icon:"QE"},
+      {id:"signal-normalizer", phase:"Query Understanding", label:"Signal Normalizer", sub:"Equivalent failure phrases become canonical terms", week:3, icon:"SN"},
       {id:"signal-gate", phase:"Retrieval Guardrails", label:"Operational Signal Gate", sub:"Blocks non-incidents like lambda ok", week:2, icon:"SG"},
       {id:"metadata-filter", phase:"Retrieval Guardrails", label:"Metadata Filter", sub:"Narrows candidates by platform/category", week:3, icon:"MF"},
       {id:"metadata-fallback", phase:"Retrieval Guardrails", label:"Observable Fallback", sub:"Retries all chunks when filtered evidence fails", week:3, icon:"FB"},
@@ -840,12 +1099,13 @@
 
     const incidentFlow = ["alert-input", "signal-gate", "embedding", "vector-search", "min-score", "runbook-context", "chat-model", "severity-policy", "json-output"];
     const negativeFlow = ["alert-input", "signal-gate"];
-    const vectorFlow = ["alert-input", "query-rewriter", "signal-gate", "metadata-filter", "embedding", "vector-search", "min-score", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
-    const rerankedFlow = ["alert-input", "query-rewriter", "signal-gate", "metadata-filter", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
-    const fallbackFlow = ["alert-input", "query-rewriter", "signal-gate", "metadata-filter", "metadata-fallback", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
+    const vectorFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "embedding", "vector-search", "min-score", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
+    const rerankedFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
+    const fallbackFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "metadata-fallback", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
 
     const weekGrid = document.getElementById("weekGrid");
     const missionPanel = document.getElementById("missionPanel");
+    const architecturePanel = document.querySelector(".architecture");
     const architectureStack = document.getElementById("architectureStack");
     const globalStatus = document.getElementById("globalStatus");
     const phaseLabel = document.getElementById("phaseLabel");
@@ -855,7 +1115,12 @@
     const nextBtn = document.getElementById("nextBtn");
     const replayBtn = document.getElementById("replayBtn");
     const scenarioControls = document.getElementById("scenarioControls");
+    const flowState = document.getElementById("flowState");
+    const flowProgress = document.getElementById("flowProgress");
+    const flowCounter = document.getElementById("flowCounter");
+    const flowReplayBtn = document.getElementById("flowReplayBtn");
     let animationTimers = [];
+    let activeViewTransition = null;
 
     let activeWeek = 3;
     let scenario = "reranked";
@@ -879,11 +1144,83 @@
         button.addEventListener("click", () => {
           const selectedWeek = Number(button.dataset.week);
           if (!weeks.some((week) => week.n === selectedWeek)) return;
-          activeWeek = selectedWeek;
-          scenario = activeWeek === 3 ? "reranked" : "incident";
-          render();
+          transitionTo({
+            week: selectedWeek,
+            scenario: selectedWeek === 3 ? "reranked" : "incident"
+          });
         });
       });
+    }
+
+    function renderScoreLab(week) {
+      if (week.n !== 3) return "";
+
+      if (scenario === "vector") {
+        return `
+          <div class="section-label"><span>Vector ranking lab</span><span>before reranking</span></div>
+          <div class="score-lab">
+            <div class="score-row winner">
+              <span>Overview</span>
+              <div class="score-track"><div class="score-fill" style="width:80.52%"></div></div>
+              <strong>0.8052</strong>
+            </div>
+            <div class="score-row">
+              <span>Immediate Actions</span>
+              <div class="score-track"><div class="score-fill" style="width:70.74%"></div></div>
+              <strong>0.7074</strong>
+            </div>
+            <div class="score-row">
+              <span>Intent bonus</span>
+              <div class="score-track"><div class="score-fill" style="width:0%"></div></div>
+              <strong>0.00</strong>
+            </div>
+          </div>
+        `;
+      }
+
+      if (scenario === "fallback") {
+        return `
+          <div class="section-label"><span>Metadata recovery lab</span><span>wrong platform</span></div>
+          <div class="score-lab">
+            <div class="score-row">
+              <span>Filtered pool</span>
+              <div class="score-track"><div class="score-fill" style="width:16.67%"></div></div>
+              <strong>5 / 30</strong>
+            </div>
+            <div class="score-row">
+              <span>Evidence above 0.60</span>
+              <div class="score-track"><div class="score-fill" style="width:0%"></div></div>
+              <strong>0</strong>
+            </div>
+            <div class="score-row winner">
+              <span>Fallback pool</span>
+              <div class="score-track"><div class="score-fill" style="width:100%"></div></div>
+              <strong>30 / 30</strong>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="section-label"><span>Reranking score lab</span><span>action query</span></div>
+        <div class="score-lab">
+          <div class="score-row">
+            <span>Overview</span>
+            <div class="score-track"><div class="score-fill" style="width:80.52%"></div></div>
+            <strong>0.8052</strong>
+          </div>
+          <div class="score-row winner">
+            <span>Immediate Actions</span>
+            <div class="score-track"><div class="score-fill" style="width:80.74%"></div></div>
+            <strong>0.8074</strong>
+          </div>
+          <div class="score-row">
+            <span>Vector + intent</span>
+            <div class="score-track"><div class="score-fill" style="width:70.74%"></div></div>
+            <strong>0.7074 + 0.10</strong>
+          </div>
+        </div>
+      `;
     }
 
     function renderMission(week) {
@@ -916,26 +1253,7 @@
           ${week.metrics.map((metric) => `<span class="metric">ok ${metric}</span>`).join("")}
         </div>
 
-        ${week.n === 3 ? `
-          <div class="section-label"><span>Reranking score lab</span><span>action query</span></div>
-          <div class="score-lab">
-            <div class="score-row">
-              <span>Overview</span>
-              <div class="score-track"><div class="score-fill" style="width:80.52%"></div></div>
-              <strong>0.8052</strong>
-            </div>
-            <div class="score-row winner">
-              <span>Immediate Actions</span>
-              <div class="score-track"><div class="score-fill" style="width:80.74%"></div></div>
-              <strong>0.8074</strong>
-            </div>
-            <div class="score-row">
-              <span>Vector + intent</span>
-              <div class="score-track"><div class="score-fill" style="width:70.74%"></div></div>
-              <strong>0.7074 + 0.10</strong>
-            </div>
-          </div>
-        ` : ""}
+        ${renderScoreLab(week)}
 
         <div class="section-label"><span>Interview recap</span><span>say this clearly</span></div>
         <div class="talking">"${week.talking}"</div>
@@ -960,6 +1278,7 @@
       }
       if (weekNumber === 3) {
         return [
+          "Normalization preserves known meaning; expansion adds controlled domain language.",
           "Expansion changes query wording; metadata changes where retrieval searches.",
           "Fallback is visible because recovered evidence may contradict metadata.",
           "min_score validates original similarity before any rerank bonus.",
@@ -1000,7 +1319,7 @@
         const lineLive = online || active;
 
         html += `
-          <div class="engine-node ${online ? "online" : ""} ${active ? "active" : ""} ${locked ? "locked" : ""}">
+          <div class="engine-node ${online ? "online" : ""} ${active ? "active" : ""} ${locked ? "locked" : ""}" data-node-id="${node.id}">
             <div class="icon">${node.icon}</div>
             <div class="node-copy">
               <strong>${node.label}</strong>
@@ -1008,30 +1327,117 @@
             </div>
             <div class="node-week">W${node.week}</div>
           </div>
-          ${index < visibleNodes.length - 1 ? `<div class="connector ${lineLive ? "live" : ""}"></div>` : ""}
+          ${index < visibleNodes.length - 1 ? `<div class="connector ${lineLive ? "live" : ""}" data-connector-after="${node.id}"></div>` : ""}
         `;
       });
 
       architectureStack.innerHTML = html;
     }
 
-    function replayArchitecture() {
+    function replayArchitecture({follow = false} = {}) {
       animationTimers.forEach((timer) => clearTimeout(timer));
       animationTimers = [];
 
       const activeNodes = Array.from(document.querySelectorAll(".engine-node.active"));
-      document.querySelectorAll(".engine-node").forEach((node) => {
-        node.classList.remove("playing");
+      const allNodes = Array.from(document.querySelectorAll(".engine-node"));
+      const allConnectors = Array.from(document.querySelectorAll(".connector"));
+
+      allNodes.forEach((node) => {
+        node.classList.remove("playing", "queued", "processing", "completed");
       });
+      allConnectors.forEach((connector) => connector.classList.remove("transmitting"));
+
+      activeNodes.forEach((node) => node.classList.add("queued"));
+      flowProgress.style.width = "0%";
+      flowCounter.textContent = `0 / ${activeNodes.length}`;
+      flowState.textContent = activeNodes.length ? "Flow queued" : "No active route";
+      replayBtn.disabled = true;
+      flowReplayBtn.disabled = true;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduceMotion && activeNodes.length) {
+        activeNodes.forEach((node) => {
+          node.classList.remove("queued");
+          node.classList.add("completed");
+        });
+        flowProgress.style.width = "100%";
+        flowCounter.textContent = `${activeNodes.length} / ${activeNodes.length}`;
+        flowState.textContent = "Grounded response complete";
+        replayBtn.disabled = false;
+        flowReplayBtn.disabled = false;
+        return;
+      }
 
       activeNodes.forEach((node, index) => {
         const timer = setTimeout(() => {
-          node.classList.remove("playing");
+          const previous = activeNodes[index - 1];
+          if (previous) {
+            previous.classList.remove("processing");
+            previous.classList.add("completed");
+            const previousConnector = document.querySelector(
+              `[data-connector-after="${previous.dataset.nodeId}"]`
+            );
+            if (previousConnector) {
+              previousConnector.classList.remove("transmitting");
+              void previousConnector.offsetWidth;
+              previousConnector.classList.add("transmitting");
+            }
+          }
+
+          node.classList.remove("queued", "playing");
           void node.offsetWidth;
-          node.classList.add("playing");
-        }, index * 190);
+          node.classList.add("playing", "processing");
+          if (
+            follow
+            && architecturePanel.scrollHeight > architecturePanel.clientHeight + 1
+          ) {
+            architecturePanel.scrollTo({
+              top: node.offsetTop - (architecturePanel.clientHeight / 2) + (node.clientHeight / 2),
+              behavior: "smooth",
+            });
+          }
+          const progress = ((index + 1) / activeNodes.length) * 100;
+          flowProgress.style.width = `${progress}%`;
+          flowCounter.textContent = `${index + 1} / ${activeNodes.length}`;
+          flowState.textContent = node.querySelector(".node-copy strong").textContent;
+
+          if (index === activeNodes.length - 1) {
+            const finishTimer = setTimeout(() => {
+              node.classList.remove("processing");
+              node.classList.add("completed");
+              flowState.textContent = "Grounded response complete";
+              replayBtn.disabled = false;
+              flowReplayBtn.disabled = false;
+            }, 520);
+            animationTimers.push(finishTimer);
+          }
+        }, index * 230);
         animationTimers.push(timer);
       });
+    }
+
+    function transitionTo(nextState) {
+      const applyState = () => {
+        if (nextState.week !== undefined) activeWeek = nextState.week;
+        if (nextState.scenario !== undefined) scenario = nextState.scenario;
+        render();
+      };
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduceMotion && document.startViewTransition) {
+        if (activeViewTransition) {
+          activeViewTransition.skipTransition();
+        }
+        const transition = document.startViewTransition(applyState);
+        activeViewTransition = transition;
+        transition.finished.finally(() => {
+          if (activeViewTransition === transition) {
+            activeViewTransition = null;
+          }
+        });
+      } else {
+        applyState();
+      }
     }
 
     function renderControls(week) {
@@ -1073,29 +1479,38 @@
       footerCounter.textContent = `Week ${activeWeek} of 12`;
       prevBtn.disabled = activeWeek === 1;
       nextBtn.disabled = activeWeek === 12;
-      replayArchitecture();
+      replayArchitecture({follow: false});
     }
 
     scenarioControls.addEventListener("click", (event) => {
       const button = event.target.closest(".scenario-btn");
       if (!button) return;
+      if (activeViewTransition) {
+        activeViewTransition.skipTransition();
+        activeViewTransition = null;
+      }
       scenario = button.dataset.scenario;
       render();
     });
 
     prevBtn.addEventListener("click", () => {
-      activeWeek = Math.max(1, activeWeek - 1);
-      scenario = activeWeek === 3 ? "reranked" : "incident";
-      render();
+      const nextWeek = Math.max(1, activeWeek - 1);
+      transitionTo({
+        week: nextWeek,
+        scenario: nextWeek === 3 ? "reranked" : "incident"
+      });
     });
 
     nextBtn.addEventListener("click", () => {
-      activeWeek = Math.min(12, activeWeek + 1);
-      scenario = activeWeek === 3 ? "reranked" : "incident";
-      render();
+      const nextWeek = Math.min(12, activeWeek + 1);
+      transitionTo({
+        week: nextWeek,
+        scenario: nextWeek === 3 ? "reranked" : "incident"
+      });
     });
 
-    replayBtn.addEventListener("click", replayArchitecture);
+    replayBtn.addEventListener("click", () => replayArchitecture({follow: true}));
+    flowReplayBtn.addEventListener("click", () => replayArchitecture({follow: true}));
 
     render();
   </script>

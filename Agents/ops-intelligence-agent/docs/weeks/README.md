@@ -13,7 +13,7 @@ Use them to:
 | --- | --- | --- |
 | [Week 01](week-01-llm-foundations.md) | LLM foundations, structured output, local embeddings, cosine similarity | Complete |
 | [Week 02](week-02-runbook-rag.md) | Runbook RAG | Complete locally |
-| [Week 03](week-03-advanced-rag.md) | Query expansion, metadata filtering, fallback, and reranking | In progress |
+| [Week 03](week-03-advanced-rag.md) | Normalization, expansion, metadata, fallback, and reranking | Complete locally |
 | [Week 04](week-04-architecture-decisions.md) | RAG architecture decisions | Planned |
 | [Week 05](week-05-tool-calling.md) | Typed outputs and tool calling | Planned |
 | [Week 06](week-06-langgraph-hitl.md) | LangGraph and human approval | Planned |

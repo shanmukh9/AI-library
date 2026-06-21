@@ -1,6 +1,6 @@
 # Week 03 - Advanced RAG
 
-> Status: In progress
+> Status: Complete locally
 
 ## Goal
 
@@ -28,6 +28,8 @@ Improve retrieval quality with a measured baseline-versus-improved comparison.
 - Optional intent-aware section reranking added.
 - Vector-only versus reranked evaluation added in `evaluate_reranking.py`.
 - Reranked Top 3 evidence integrated into `basic_chain.py`.
+- Controlled timeout-phrase normalization added before gating and embedding.
+- Dedicated signal-gate evaluation added in `evaluate_signal_gate.py`.
 
 ## Why This Matters
 
@@ -344,11 +346,61 @@ Kubernetes OOM:    P1 match
 Severity matches:  3/3
 ```
 
+## Operational Signal Normalization
+
+The signal gate is deterministic string logic, so semantically equivalent
+phrases previously behaved differently:
+
+```text
+timeout    -> pass
+timed out  -> reject
+timing out -> reject
+```
+
+Week 3 now canonicalizes controlled timeout variations:
+
+```text
+timed out
+timing out
+time out
+times out
+timed-out
+    -> timeout
+```
+
+The normalized query is used by both the operational gate and embedding search.
+The manual query CLI prints the normalized form when it changes.
+
+This is safer than expanding `lambda acting weird` into a timeout because
+normalization preserves a known failure meaning instead of inventing one. The
+unsafe vague expansion was removed.
+
+Evaluate:
+
+```powershell
+python .\evaluate_signal_gate.py
+```
+
+Measured locally:
+
+```text
+Signal gate cases: 10/10
+Timeout variants:  6/6 passed
+Vague/normal text: 4/4 rejected
+
+lambda timing out repeatedly
+-> normalized to: lambda timeout repeatedly
+-> lambda-timeout.md Top-1: 0.8283
+
+lambda acting weird
+-> no retrieved evidence
+```
+
 ## Important Lesson
 
 Week 2 proved that vector search can retrieve relevant runbook evidence. Week 3
-starts to improve retrieval quality by rewriting terse human language into more
-searchable operational language.
+made that retrieval pipeline more robust, selective, explainable, and useful to
+the downstream LLM.
 
 This is still not LLM query rewriting. It is a deterministic, explainable first
 step.
@@ -383,11 +435,12 @@ shows whether the new component helped.
 - Incorrect metadata can remove the correct runbook from the candidate set.
 - Fallback can retrieve evidence outside the supplied platform, so callers must
   expose that fallback occurred.
-- The signal gate currently recognizes `timeout` but not the phrase
-  `timing out`; metadata is never reached if the alert fails that earlier gate.
+- Signal normalization currently covers controlled timeout variants only.
+- The signal gate remains deterministic and does not understand arbitrary
+  natural-language descriptions.
 
 ## Next Step
 
-Improve the operational signal gate for controlled wording variations such as
-`timeout`, `timed out`, and `timing out`, then run the complete Week 3
-evaluation before closure.
+Begin Week 4 by documenting retrieval architecture decisions: when the current
+vector pipeline is sufficient, and when hybrid retrieval, routing, or a learned
+reranker would be justified.

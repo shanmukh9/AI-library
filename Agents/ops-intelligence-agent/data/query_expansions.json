@@ -18,9 +18,5 @@
   {
     "triggers": ["api is slow", "api slow"],
     "expansion": "API slow responses high CPU usage saturation"
-  },
-  {
-    "triggers": ["lambda acting weird", "lambda strange today"],
-    "expansion": "Lambda function timeout failure"
   }
 ]

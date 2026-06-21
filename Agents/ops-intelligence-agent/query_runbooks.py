@@ -5,6 +5,7 @@ from runbook_rag import (
     expand_query_for_retrieval,
     format_evidence,
     load_runbook_index,
+    normalize_operational_signals,
     search_runbooks,
     select_candidate_chunks,
 )
@@ -37,6 +38,7 @@ if not query:
     query = "CPU usage on prod-api-server-01 exceeded 95% for 10 consecutive minutes"
 
 expanded_query = expand_query_for_retrieval(query)
+normalized_query = normalize_operational_signals(expanded_query)
 metadata_filters = {
     field: value
     for field, value in {
@@ -66,6 +68,8 @@ if fallback_used:
 print(f"Query: {query}")
 if expanded_query != query:
     print(f"Expanded query: {expanded_query}")
+if normalized_query != expanded_query:
+    print(f"Normalized query: {normalized_query}")
 if metadata_filters:
     rendered_filters = ", ".join(
         f"{field}={value}" for field, value in metadata_filters.items()
