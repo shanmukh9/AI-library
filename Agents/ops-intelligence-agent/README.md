@@ -455,3 +455,22 @@ Do not treat every retrieval miss as a retrieval-engine problem.
 First classify the failure: missing knowledge, vague alert, terse wording,
 metadata issue, threshold issue, wrong section ranking, or LLM reasoning error.
 ```
+
+Run the diagnosis evaluator:
+
+```powershell
+python .\evaluate_retrieval_diagnosis.py
+```
+
+Measured locally:
+
+```text
+Cases:                 6
+Passes:                3
+Failures:              0
+Review-required cases: 3
+```
+
+`REVIEW` means the result is not a code failure, but it needs architecture
+judgment. For example, `certificate error` can retrieve SSL expiry evidence,
+but the phrase is too broad to safely assume expiry.

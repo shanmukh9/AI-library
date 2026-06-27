@@ -180,3 +180,54 @@ correct_evidence_wrong_answer
 
 This will turn architecture decisions into measurable evidence instead of
 opinions.
+
+## Week 4 Diagnosis Evaluator
+
+The first diagnosis evaluator is implemented in:
+
+```powershell
+python .\evaluate_retrieval_diagnosis.py
+```
+
+Unlike a pure accuracy test, this evaluator separates outcomes into:
+
+```text
+PASS   -> behavior is acceptable
+REVIEW -> retrieval is mechanically explainable but needs architecture judgment
+FAIL   -> expected behavior broke
+```
+
+Measured locally:
+
+```text
+Cases:                 6
+Passes:                3
+Failures:              0
+Review-required cases: 3
+```
+
+Current review cases:
+
+| Query | Why it needs review |
+| --- | --- |
+| `certificate error` | Retrieves SSL expiry evidence, but the alert is too broad to assume expiry. |
+| `pod CrashLoopBackOff` | Retrieves OOM evidence, but CrashLoopBackOff alone is a broad Kubernetes symptom. |
+| `how do I fix Lambda timeout?` | Detects action intent, but the Overview chunk still outranks Immediate Actions for short fix-oriented wording. |
+
+The Lambda case is especially useful because it shows a subtle limitation:
+
+```text
+Reranking can only gently adjust already relevant chunks.
+If the Overview vector score is much stronger than the action section score,
+a small bonus may not be enough to move Immediate Actions to Top-1.
+```
+
+This does not automatically mean the reranking bonus should be increased.
+Possible fixes should be evaluated:
+
+```text
+1. Improve action-intent detection for short wording like "fix".
+2. Improve section text so Immediate Actions embeds closer to fix-oriented queries.
+3. Tune the reranking bonus only after checking false positives.
+4. Use an explicit answer-intent field in a later typed-output or router layer.
+```
