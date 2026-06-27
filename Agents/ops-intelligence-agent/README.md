@@ -21,6 +21,7 @@ fallback, reranking, and the grounded LLM chain.
 - Week 1: local structured alert analysis baseline complete.
 - Week 2: runbook RAG baseline complete locally.
 - Week 3: advanced RAG complete locally.
+- Week 4: retrieval evaluation and architecture decision notes in progress.
 
 ## Week 1 Baseline
 
@@ -436,4 +437,21 @@ Negative no-match:        2/2
 Metadata strict/fallback: 3/3 and 3/3
 Intent reranking:         1/3 -> 3/3
 End-to-end severity:      3/3
+```
+
+## Week 4 Retrieval Evaluation
+
+Week 4 focuses on diagnosing retrieval failures before adding more
+architecture. The current decision is to defer hybrid keyword + vector
+retrieval until evaluation proves it is needed.
+
+The retrieval diagnosis matrix is captured in
+[Week 04 - Retrieval Evaluation and Architecture Decisions](docs/weeks/week-04-architecture-decisions.md).
+
+Current architectural rule:
+
+```text
+Do not treat every retrieval miss as a retrieval-engine problem.
+First classify the failure: missing knowledge, vague alert, terse wording,
+metadata issue, threshold issue, wrong section ranking, or LLM reasoning error.
 ```
