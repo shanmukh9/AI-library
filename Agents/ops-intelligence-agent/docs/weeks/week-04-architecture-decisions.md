@@ -231,3 +231,108 @@ Possible fixes should be evaluated:
 3. Tune the reranking bonus only after checking false positives.
 4. Use an explicit answer-intent field in a later typed-output or router layer.
 ```
+
+## Reranking Sensitivity Experiment
+
+The short action query created a useful architecture question:
+
+```text
+How large would the action-intent bonus need to be before Immediate Actions
+beats Overview for "how do I fix Lambda timeout?"
+```
+
+Run:
+
+```powershell
+python .\evaluate_reranking_sensitivity.py
+```
+
+Measured locally:
+
+```text
+Action bonus 0.10 -> expected-section hits 3/4
+Action bonus 0.12 -> expected-section hits 3/4
+Action bonus 0.15 -> expected-section hits 3/4
+Action bonus 0.20 -> expected-section hits 3/4
+Action bonus 0.22 -> expected-section hits 4/4
+Action bonus 0.25 -> expected-section hits 4/4
+```
+
+Finding:
+
+```text
+The short action query needs about 0.22 bonus to move Immediate Actions above
+Overview in this small Lambda-only test.
+```
+
+Decision:
+
+```text
+Do not change the production reranking bonus yet.
+```
+
+Reason:
+
+```text
+A higher bonus fixes this one short action query, but it may also over-promote
+action sections in broader cases. The next step is to add more action, cause,
+and symptom evals across multiple runbooks before changing the default bonus.
+```
+
+## Broader Reranking Safety Experiment
+
+The next experiment tests the same action-bonus question across multiple
+runbooks and intents instead of only Lambda.
+
+Run:
+
+```powershell
+python .\evaluate_reranking_broader.py
+```
+
+Scope:
+
+```text
+Runbooks tested: 4
+Cases per bonus: 16
+Intents: action, cause, symptom
+```
+
+Measured locally:
+
+```text
+Action bonus 0.10 -> expected-section Top-1: 7/16
+Action bonus 0.15 -> expected-section Top-1: 9/16
+Action bonus 0.20 -> expected-section Top-1: 11/16
+Action bonus 0.22 -> expected-section Top-1: 11/16
+Action bonus 0.25 -> expected-section Top-1: 11/16
+```
+
+Important diagnosis:
+
+```text
+Increasing the action bonus helps some action-intent cases, but it does not
+fix all misses.
+```
+
+Why:
+
+```text
+1. RDS max-connection queries are blocked by the operational signal gate.
+2. Kubernetes cause intent still ranks Overview above Probable Causes.
+3. Some action queries need a stronger bonus, but that is only one failure type.
+```
+
+Current decision:
+
+```text
+Do not change the production action bonus yet.
+```
+
+Reason:
+
+```text
+The broader eval shows that reranking bonus is only part of the problem.
+Before tuning defaults, fix or evaluate the signal gate for database connection
+incidents and add more cause/action/symptom cases across the full runbook set.
+```

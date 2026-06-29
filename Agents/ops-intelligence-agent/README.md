@@ -474,3 +474,38 @@ Review-required cases: 3
 `REVIEW` means the result is not a code failure, but it needs architecture
 judgment. For example, `certificate error` can retrieve SSL expiry evidence,
 but the phrase is too broad to safely assume expiry.
+
+Run the reranking sensitivity experiment:
+
+```powershell
+python .\evaluate_reranking_sensitivity.py
+```
+
+Measured locally:
+
+```text
+Action bonus 0.10 -> expected-section hits 3/4
+Action bonus 0.22 -> expected-section hits 4/4
+```
+
+This does not change the production reranking bonus. It documents that a higher
+bonus can fix a short action-intent query, but broader evals are needed before
+tuning the default.
+
+Run the broader reranking safety experiment:
+
+```powershell
+python .\evaluate_reranking_broader.py
+```
+
+Measured locally:
+
+```text
+Action bonus 0.10 -> expected-section Top-1: 7/16
+Action bonus 0.20 -> expected-section Top-1: 11/16
+Action bonus 0.22 -> expected-section Top-1: 11/16
+```
+
+The plateau matters: some misses are not reranking problems. RDS max-connection
+queries are blocked by the signal gate, and one Kubernetes cause query still
+ranks Overview above Probable Causes.
