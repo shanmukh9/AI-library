@@ -509,3 +509,20 @@ Action bonus 0.22 -> expected-section Top-1: 11/16
 The plateau matters: some misses are not reranking problems. RDS max-connection
 queries are blocked by the signal gate, and one Kubernetes cause query still
 ranks Overview above Probable Causes.
+
+Run the failure-stage diagnosis evaluator:
+
+```powershell
+python .\evaluate_failure_stage_diagnosis.py
+```
+
+Measured locally:
+
+```text
+Cases:                   5
+Stage diagnosis matches: 5/5
+```
+
+This evaluator showed that `checkout HTTP 504` is blocked by the signal gate
+before retrieval, so the first fix is not reranking. Add `504` as a controlled
+operational signal, then test whether a 504 runbook is also needed.

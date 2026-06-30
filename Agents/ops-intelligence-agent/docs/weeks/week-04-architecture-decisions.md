@@ -336,3 +336,45 @@ The broader eval shows that reranking bonus is only part of the problem.
 Before tuning defaults, fix or evaluate the signal gate for database connection
 incidents and add more cause/action/symptom cases across the full runbook set.
 ```
+
+## Failure Stage Diagnosis Evaluator
+
+The next Week 4 artifact diagnoses where a case failed in the pipeline instead
+of only checking whether the final retrieval result is correct.
+
+Run:
+
+```powershell
+python .\evaluate_failure_stage_diagnosis.py
+```
+
+Measured locally:
+
+```text
+Cases:                   5
+Stage diagnosis matches: 5/5
+```
+
+Stages covered:
+
+| Query | Diagnosed stage | Best first fix |
+| --- | --- | --- |
+| `RDS max database connections reached` | `blocked_by_signal_gate` | Add controlled database failure signals or expansion before retrieval. |
+| `how do I fix Lambda timeout?` | `wrong_section_after_retrieval` | Evaluate reranking weight, action-intent handling, or section wording. |
+| `checkout HTTP 504` | `blocked_by_signal_gate` | Add `504` as a controlled operational signal, then add a 504 runbook if retrieval still has no evidence. |
+| `certificate error` | `ambiguous_but_retrieved` | Clarify the alert or add broader certificate troubleshooting coverage. |
+| `db maxed connections` | `retrieval_ok` | Keep controlled query expansion and monitor false positives. |
+
+This corrected an earlier assumption:
+
+```text
+checkout HTTP 504 was not proven to be only missing knowledge.
+It is blocked by the signal gate first.
+```
+
+Architect lesson:
+
+```text
+Diagnose the earliest failed stage first. Do not tune reranking when the query
+never reached retrieval.
+```
