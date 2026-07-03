@@ -79,7 +79,7 @@ Structured incident analysis
 
 | Query | Diagnosis | Best fix | Why |
 | --- | --- | --- | --- |
-| `checkout HTTP 504` | Missing knowledge | Add a 504 gateway timeout runbook and eval case | 504 is not the same as 502. Returning no evidence is safer than forcing the 502 runbook. |
+| `checkout HTTP 504` | Wrong neighboring runbook after gate fix | Add a 504 gateway timeout runbook and eval case | 504 now passes the gate, but it borrows the neighboring 502 runbook because 504-specific knowledge is missing. |
 | `certificate error` | Vague alert | Clarify, require stronger evidence, or add a broad certificate troubleshooting runbook | Certificate errors may mean expiry, hostname mismatch, trust chain, TLS, renewal, or wrong certificate. |
 | `pod CrashLoopBackOff` | Broad Kubernetes symptom | Add a general CrashLoopBackOff runbook or require stronger cause signals like `OOMKilled` | CrashLoopBackOff is a state, not a single root cause. |
 | `db maxed connections` | Terse operational shorthand | Query expansion | Expansion maps human shorthand to runbook language such as connection pool exhaustion and max database connections. |
@@ -99,7 +99,7 @@ pod OOMKilled            -> vector retrieval finds Kubernetes OOM evidence
 pod CrashLoopBackOff     -> vector retrieval finds Kubernetes OOM evidence, but the query is broad
 certificate expires      -> vector retrieval finds SSL expiry evidence
 certificate error        -> vector retrieval finds SSL evidence, but the query is ambiguous
-checkout HTTP 504        -> no evidence, likely because 504 knowledge is missing
+checkout HTTP 504        -> retrieves neighboring ALB 502 evidence, so 504 knowledge is still missing
 ```
 
 These results do not justify hybrid retrieval yet. They point to knowledge
@@ -201,15 +201,16 @@ Measured locally:
 
 ```text
 Cases:                 6
-Passes:                3
+Passes:                2
 Failures:              0
-Review-required cases: 3
+Review-required cases: 4
 ```
 
 Current review cases:
 
 | Query | Why it needs review |
 | --- | --- |
+| `checkout HTTP 504` | Passes the gate but retrieves neighboring 502 evidence, which is not safe for a 504 incident. |
 | `certificate error` | Retrieves SSL expiry evidence, but the alert is too broad to assume expiry. |
 | `pod CrashLoopBackOff` | Retrieves OOM evidence, but CrashLoopBackOff alone is a broad Kubernetes symptom. |
 | `how do I fix Lambda timeout?` | Detects action intent, but the Overview chunk still outranks Immediate Actions for short fix-oriented wording. |
@@ -301,11 +302,11 @@ Intents: action, cause, symptom
 Measured locally:
 
 ```text
-Action bonus 0.10 -> expected-section Top-1: 7/16
-Action bonus 0.15 -> expected-section Top-1: 9/16
-Action bonus 0.20 -> expected-section Top-1: 11/16
-Action bonus 0.22 -> expected-section Top-1: 11/16
-Action bonus 0.25 -> expected-section Top-1: 11/16
+Action bonus 0.10 -> expected-section Top-1: 10/16
+Action bonus 0.15 -> expected-section Top-1: 13/16
+Action bonus 0.20 -> expected-section Top-1: 15/16
+Action bonus 0.22 -> expected-section Top-1: 15/16
+Action bonus 0.25 -> expected-section Top-1: 15/16
 ```
 
 Important diagnosis:
@@ -318,7 +319,7 @@ fix all misses.
 Why:
 
 ```text
-1. RDS max-connection queries are blocked by the operational signal gate.
+1. RDS max-connection queries now pass the signal gate and reach retrieval.
 2. Kubernetes cause intent still ranks Overview above Probable Causes.
 3. Some action queries need a stronger bonus, but that is only one failure type.
 ```
@@ -333,8 +334,8 @@ Reason:
 
 ```text
 The broader eval shows that reranking bonus is only part of the problem.
-Before tuning defaults, fix or evaluate the signal gate for database connection
-incidents and add more cause/action/symptom cases across the full runbook set.
+Before tuning defaults, add more cause/action/symptom cases across the full
+runbook set and resolve the remaining cause-ranking miss.
 ```
 
 ## Failure Stage Diagnosis Evaluator
@@ -359,17 +360,17 @@ Stages covered:
 
 | Query | Diagnosed stage | Best first fix |
 | --- | --- | --- |
-| `RDS max database connections reached` | `blocked_by_signal_gate` | Add controlled database failure signals or expansion before retrieval. |
+| `RDS max database connections reached` | `retrieval_ok` | Keep controlled database max-connection signal coverage. |
 | `how do I fix Lambda timeout?` | `wrong_section_after_retrieval` | Evaluate reranking weight, action-intent handling, or section wording. |
-| `checkout HTTP 504` | `blocked_by_signal_gate` | Add `504` as a controlled operational signal, then add a 504 runbook if retrieval still has no evidence. |
+| `checkout HTTP 504` | `wrong_runbook_after_retrieval` | Add a 504 gateway timeout runbook so the system does not borrow the neighboring 502 runbook. |
 | `certificate error` | `ambiguous_but_retrieved` | Clarify the alert or add broader certificate troubleshooting coverage. |
 | `db maxed connections` | `retrieval_ok` | Keep controlled query expansion and monitor false positives. |
 
 This corrected an earlier assumption:
 
 ```text
-checkout HTTP 504 was not proven to be only missing knowledge.
-It is blocked by the signal gate first.
+checkout HTTP 504 was first blocked by the signal gate.
+After adding 504 as a controlled signal, it reaches retrieval but borrows 502 evidence.
 ```
 
 Architect lesson:
@@ -378,3 +379,53 @@ Architect lesson:
 Diagnose the earliest failed stage first. Do not tune reranking when the query
 never reached retrieval.
 ```
+
+## Signal-Gate Coverage Experiment
+
+After the failure-stage evaluator showed database and 504 cases were blocked
+too early, the signal gate was expanded carefully.
+
+Run:
+
+```powershell
+python .\evaluate_signal_gate_coverage.py
+```
+
+Measured locally:
+
+```text
+Cases:           10
+Correct:         10/10
+False negatives: 0
+False positives: 0
+```
+
+What changed:
+
+```text
+1. Added `504` as a controlled operational signal.
+2. Added narrow regex patterns for database max-connection incidents.
+3. Did not add broad words like `connection`, `database`, `HTTP`, or `certificate`.
+```
+
+Why:
+
+```text
+Broad words increase false positives.
+Controlled phrases improve recall without letting normal text enter retrieval.
+```
+
+Resulting stage change:
+
+```text
+RDS max database connections reached
+    before -> blocked_by_signal_gate
+    after  -> retrieval_ok
+
+checkout HTTP 504
+    before -> blocked_by_signal_gate
+    after  -> wrong_runbook_after_retrieval
+```
+
+This is progress: the earliest failure moved downstream, making the next needed
+fix clearer.

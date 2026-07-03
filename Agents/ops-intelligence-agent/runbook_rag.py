@@ -44,6 +44,7 @@ OPERATIONAL_PROBLEM_SIGNALS = [
     "crashloop",
     "oomkilled",
     "502",
+    "504",
     "latency",
     "exhausted",
     "denied",
@@ -57,6 +58,11 @@ OPERATIONAL_SIGNAL_NORMALIZATIONS = [
     (r"\btiming[\s-]+out\b", "timeout"),
     (r"\btimes[\s-]+out\b", "timeout"),
     (r"\btime[\s-]+out\b", "timeout"),
+]
+
+OPERATIONAL_PROBLEM_PATTERNS = [
+    r"\b(?:rds|database|db)\b.{0,40}\bmax(?:imum)?\b.{0,30}\bconnections?\b.{0,30}\breached\b",
+    r"\b(?:rds|database|db)\b.{0,40}\bconnections?\b.{0,30}\bmax(?:ed|imum)?\b",
 ]
 
 
@@ -74,7 +80,10 @@ def normalize_operational_signals(query):
 
 def has_operational_problem_signal(query):
     normalized_query = normalize_operational_signals(query).lower()
-    return any(signal in normalized_query for signal in OPERATIONAL_PROBLEM_SIGNALS)
+    return any(signal in normalized_query for signal in OPERATIONAL_PROBLEM_SIGNALS) or any(
+        re.search(pattern, normalized_query, flags=re.IGNORECASE)
+        for pattern in OPERATIONAL_PROBLEM_PATTERNS
+    )
 
 
 def load_query_expansion_rules(path=QUERY_EXPANSIONS_PATH):

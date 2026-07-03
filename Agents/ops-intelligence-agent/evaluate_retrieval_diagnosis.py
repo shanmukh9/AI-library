@@ -5,12 +5,14 @@ TEST_CASES = [
     {
         "name": "missing_504_runbook",
         "query": "checkout HTTP 504",
-        "expected_source": None,
+        "expected_source": "alb-502-health-checks.md",
         "expected_section": None,
-        "diagnosis": "missing_knowledge",
-        "best_fix": "Add a 504 gateway timeout runbook and an eval case.",
-        "why": "504 is not the same incident pattern as the existing 502 runbook.",
+        "diagnosis": "wrong_neighboring_runbook_after_gate_fix",
+        "best_fix": "Add a 504 gateway timeout runbook and eval case.",
+        "why": "504 now passes the gate, but it borrows the neighboring 502 runbook because 504-specific knowledge is missing.",
         "search_kwargs": {},
+        "review_required": True,
+        "review_note": "This is progress from gate-blocked to retrieval-visible, but the retrieved 502 evidence is not safe for 504.",
     },
     {
         "name": "vague_certificate_error",

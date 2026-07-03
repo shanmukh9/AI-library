@@ -11,10 +11,10 @@ TEST_CASES = [
     {
         "name": "rds_gate_block",
         "query": "RDS max database connections reached",
-        "expected_stage": "blocked_by_signal_gate",
+        "expected_stage": "retrieval_ok",
         "expected_source": "rds-connection-pool.md",
         "expected_section": None,
-        "best_fix": "Add controlled database failure signals or expansion before retrieval.",
+        "best_fix": "Keep controlled database max-connection signal coverage.",
     },
     {
         "name": "lambda_short_action",
@@ -32,10 +32,10 @@ TEST_CASES = [
     {
         "name": "checkout_504_missing",
         "query": "checkout HTTP 504",
-        "expected_stage": "blocked_by_signal_gate",
-        "expected_source": None,
+        "expected_stage": "wrong_runbook_after_retrieval",
+        "expected_source": "http-504-gateway-timeout.md",
         "expected_section": None,
-        "best_fix": "Add 504 as a controlled operational signal, then add a 504 runbook if retrieval still has no evidence.",
+        "best_fix": "Add a 504 gateway timeout runbook so the system does not borrow the neighboring 502 runbook.",
     },
     {
         "name": "certificate_ambiguous",

@@ -466,9 +466,9 @@ Measured locally:
 
 ```text
 Cases:                 6
-Passes:                3
+Passes:                2
 Failures:              0
-Review-required cases: 3
+Review-required cases: 4
 ```
 
 `REVIEW` means the result is not a code failure, but it needs architecture
@@ -501,14 +501,14 @@ python .\evaluate_reranking_broader.py
 Measured locally:
 
 ```text
-Action bonus 0.10 -> expected-section Top-1: 7/16
-Action bonus 0.20 -> expected-section Top-1: 11/16
-Action bonus 0.22 -> expected-section Top-1: 11/16
+Action bonus 0.10 -> expected-section Top-1: 10/16
+Action bonus 0.20 -> expected-section Top-1: 15/16
+Action bonus 0.22 -> expected-section Top-1: 15/16
 ```
 
-The plateau matters: some misses are not reranking problems. RDS max-connection
-queries are blocked by the signal gate, and one Kubernetes cause query still
-ranks Overview above Probable Causes.
+The plateau matters: after signal-gate coverage improved, RDS cases now reach
+retrieval. The remaining miss is a Kubernetes cause query where Overview still
+ranks above Probable Causes.
 
 Run the failure-stage diagnosis evaluator:
 
@@ -524,5 +524,21 @@ Stage diagnosis matches: 5/5
 ```
 
 This evaluator showed that `checkout HTTP 504` is blocked by the signal gate
-before retrieval, so the first fix is not reranking. Add `504` as a controlled
-operational signal, then test whether a 504 runbook is also needed.
+before retrieval in the old gate. After adding `504` as a controlled signal, it
+now reaches retrieval but borrows the neighboring 502 runbook, so the next fix
+is 504-specific runbook coverage.
+
+Run the signal-gate coverage evaluator:
+
+```powershell
+python .\evaluate_signal_gate_coverage.py
+```
+
+Measured locally:
+
+```text
+Cases:           10
+Correct:         10/10
+False negatives: 0
+False positives: 0
+```
