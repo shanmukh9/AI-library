@@ -3,16 +3,14 @@ from runbook_rag import DEFAULT_MIN_SCORE, search_runbooks
 
 TEST_CASES = [
     {
-        "name": "missing_504_runbook",
+        "name": "http_504_coverage",
         "query": "checkout HTTP 504",
-        "expected_source": "alb-502-health-checks.md",
+        "expected_source": "http-504-gateway-timeout.md",
         "expected_section": None,
-        "diagnosis": "wrong_neighboring_runbook_after_gate_fix",
-        "best_fix": "Add a 504 gateway timeout runbook and eval case.",
-        "why": "504 now passes the gate, but it borrows the neighboring 502 runbook because 504-specific knowledge is missing.",
+        "diagnosis": "retrieval_ok_after_504_runbook",
+        "best_fix": "Keep 504-specific runbook coverage and monitor confusion with 502.",
+        "why": "504 now passes the gate and should retrieve 504-specific evidence instead of borrowing 502.",
         "search_kwargs": {},
-        "review_required": True,
-        "review_note": "This is progress from gate-blocked to retrieval-visible, but the retrieved 502 evidence is not safe for 504.",
     },
     {
         "name": "vague_certificate_error",

@@ -466,9 +466,9 @@ Measured locally:
 
 ```text
 Cases:                 6
-Passes:                2
+Passes:                3
 Failures:              0
-Review-required cases: 4
+Review-required cases: 3
 ```
 
 `REVIEW` means the result is not a code failure, but it needs architecture
@@ -523,10 +523,9 @@ Cases:                   5
 Stage diagnosis matches: 5/5
 ```
 
-This evaluator showed that `checkout HTTP 504` is blocked by the signal gate
-before retrieval in the old gate. After adding `504` as a controlled signal, it
-now reaches retrieval but borrows the neighboring 502 runbook, so the next fix
-is 504-specific runbook coverage.
+This evaluator showed the progression for `checkout HTTP 504`: it was first
+blocked by the signal gate, then borrowed neighboring 502 evidence, and now
+retrieves the 504-specific runbook after adding dedicated coverage.
 
 Run the signal-gate coverage evaluator:
 
@@ -541,4 +540,14 @@ Cases:           10
 Correct:         10/10
 False negatives: 0
 False positives: 0
+```
+
+Runbook coverage update:
+
+```text
+Runbook chunks:               35
+Expanded retrieval Top-1:      12/12
+Expanded retrieval Top-3:      12/12
+Negative no-match behavior:    2/2
+504 direct query Top-1 source: http-504-gateway-timeout.md
 ```

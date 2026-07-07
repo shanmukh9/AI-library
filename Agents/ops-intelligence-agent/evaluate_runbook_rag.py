@@ -41,6 +41,11 @@ TEST_CASES = [
         "expected_source": "alb-502-health-checks.md",
     },
     {
+        "name": "http_504_gateway_timeout",
+        "query": "checkout HTTP 504 gateway timeout",
+        "expected_source": "http-504-gateway-timeout.md",
+    },
+    {
         "name": "ssl_certificate_expiry",
         "query": "SSL certificate for www.example.com expiring in 3 days",
         "expected_source": "ssl-certificate-expiry.md",

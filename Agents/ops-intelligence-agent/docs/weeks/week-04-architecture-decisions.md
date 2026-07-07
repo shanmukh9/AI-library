@@ -79,7 +79,7 @@ Structured incident analysis
 
 | Query | Diagnosis | Best fix | Why |
 | --- | --- | --- | --- |
-| `checkout HTTP 504` | Wrong neighboring runbook after gate fix | Add a 504 gateway timeout runbook and eval case | 504 now passes the gate, but it borrows the neighboring 502 runbook because 504-specific knowledge is missing. |
+| `checkout HTTP 504` | Retrieval OK after 504 coverage | Keep 504-specific runbook coverage and monitor confusion with 502 | 504 first failed at the gate, then borrowed 502 evidence, and now retrieves the 504 runbook after dedicated coverage was added. |
 | `certificate error` | Vague alert | Clarify, require stronger evidence, or add a broad certificate troubleshooting runbook | Certificate errors may mean expiry, hostname mismatch, trust chain, TLS, renewal, or wrong certificate. |
 | `pod CrashLoopBackOff` | Broad Kubernetes symptom | Add a general CrashLoopBackOff runbook or require stronger cause signals like `OOMKilled` | CrashLoopBackOff is a state, not a single root cause. |
 | `db maxed connections` | Terse operational shorthand | Query expansion | Expansion maps human shorthand to runbook language such as connection pool exhaustion and max database connections. |
@@ -99,7 +99,7 @@ pod OOMKilled            -> vector retrieval finds Kubernetes OOM evidence
 pod CrashLoopBackOff     -> vector retrieval finds Kubernetes OOM evidence, but the query is broad
 certificate expires      -> vector retrieval finds SSL expiry evidence
 certificate error        -> vector retrieval finds SSL evidence, but the query is ambiguous
-checkout HTTP 504        -> retrieves neighboring ALB 502 evidence, so 504 knowledge is still missing
+checkout HTTP 504        -> retrieves HTTP 504 Gateway Timeout evidence after dedicated runbook coverage
 ```
 
 These results do not justify hybrid retrieval yet. They point to knowledge
@@ -201,16 +201,15 @@ Measured locally:
 
 ```text
 Cases:                 6
-Passes:                2
+Passes:                3
 Failures:              0
-Review-required cases: 4
+Review-required cases: 3
 ```
 
 Current review cases:
 
 | Query | Why it needs review |
 | --- | --- |
-| `checkout HTTP 504` | Passes the gate but retrieves neighboring 502 evidence, which is not safe for a 504 incident. |
 | `certificate error` | Retrieves SSL expiry evidence, but the alert is too broad to assume expiry. |
 | `pod CrashLoopBackOff` | Retrieves OOM evidence, but CrashLoopBackOff alone is a broad Kubernetes symptom. |
 | `how do I fix Lambda timeout?` | Detects action intent, but the Overview chunk still outranks Immediate Actions for short fix-oriented wording. |
@@ -362,7 +361,7 @@ Stages covered:
 | --- | --- | --- |
 | `RDS max database connections reached` | `retrieval_ok` | Keep controlled database max-connection signal coverage. |
 | `how do I fix Lambda timeout?` | `wrong_section_after_retrieval` | Evaluate reranking weight, action-intent handling, or section wording. |
-| `checkout HTTP 504` | `wrong_runbook_after_retrieval` | Add a 504 gateway timeout runbook so the system does not borrow the neighboring 502 runbook. |
+| `checkout HTTP 504` | `retrieval_ok` | Keep 504-specific runbook coverage and monitor confusion with 502. |
 | `certificate error` | `ambiguous_but_retrieved` | Clarify the alert or add broader certificate troubleshooting coverage. |
 | `db maxed connections` | `retrieval_ok` | Keep controlled query expansion and monitor false positives. |
 
@@ -370,7 +369,8 @@ This corrected an earlier assumption:
 
 ```text
 checkout HTTP 504 was first blocked by the signal gate.
-After adding 504 as a controlled signal, it reaches retrieval but borrows 502 evidence.
+After adding 504 as a controlled signal, it reached retrieval but borrowed 502 evidence.
+After adding a 504 runbook, it retrieves the 504 evidence.
 ```
 
 Architect lesson:
@@ -424,8 +424,45 @@ RDS max database connections reached
 
 checkout HTTP 504
     before -> blocked_by_signal_gate
-    after  -> wrong_runbook_after_retrieval
+    after signal fix -> wrong_runbook_after_retrieval
+    after 504 runbook -> retrieval_ok
 ```
 
-This is progress: the earliest failure moved downstream, making the next needed
-fix clearer.
+This is progress: each fix moved the failure downstream until the query
+retrieved grounded 504 evidence.
+
+## 504 Runbook Coverage Fix
+
+The 504 failure became clear only after the signal gate allowed `504` through.
+The retriever then borrowed neighboring 502 evidence, which showed that the
+knowledge base needed a 504-specific runbook.
+
+Added:
+
+```text
+runbooks/http-504-gateway-timeout.md
+```
+
+Rebuilt:
+
+```powershell
+python .\index_runbooks.py
+```
+
+Measured locally:
+
+```text
+Runbook chunks:            35
+Expanded Top-1 accuracy:   12/12
+Expanded Top-3 hit rate:   12/12
+Negative no-match:         2/2
+504 direct Top-1 source:   http-504-gateway-timeout.md
+504 direct similarity:     0.8986
+```
+
+Memory hook:
+
+```text
+When retrieval chooses the closest wrong document, the fix is usually better
+knowledge coverage, not reranking.
+```

@@ -32,10 +32,10 @@ TEST_CASES = [
     {
         "name": "checkout_504_missing",
         "query": "checkout HTTP 504",
-        "expected_stage": "wrong_runbook_after_retrieval",
+        "expected_stage": "retrieval_ok",
         "expected_source": "http-504-gateway-timeout.md",
         "expected_section": None,
-        "best_fix": "Add a 504 gateway timeout runbook so the system does not borrow the neighboring 502 runbook.",
+        "best_fix": "Keep 504-specific runbook coverage and monitor confusion with 502.",
     },
     {
         "name": "certificate_ambiguous",
