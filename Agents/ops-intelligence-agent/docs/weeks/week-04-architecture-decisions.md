@@ -1,6 +1,52 @@
 # Week 04 - Retrieval Evaluation and Architecture Decisions
 
-> Status: In progress
+> Status: Complete locally
+
+## Final Recap
+
+Week 4 turned the OIA retriever from a working vector RAG prototype into a
+diagnosable retrieval system. The main lesson was not to add more architecture
+until the failed pipeline stage is known.
+
+What changed:
+
+```text
+1. Added retrieval diagnosis cases with PASS/REVIEW/FAIL outcomes.
+2. Added reranking sensitivity experiments.
+3. Added broader reranking safety evaluation across runbooks and intents.
+4. Added failure-stage diagnosis.
+5. Added signal-gate coverage evaluation.
+6. Improved controlled signal-gate recall for 504 and database max-connection incidents.
+7. Added HTTP 504 Gateway Timeout runbook coverage.
+```
+
+Measured final state:
+
+```text
+Runbook chunks:                  35
+Expanded retrieval Top-1:        12/12
+Expanded retrieval Top-3:        12/12
+Negative no-match:               2/2
+Signal-gate coverage:            10/10
+Signal-gate false positives:     0
+Failure-stage diagnosis:         5/5
+Broader reranking at 0.20 bonus: 15/16 expected-section Top-1
+```
+
+Final architecture decision:
+
+```text
+Defer hybrid BM25 + vector retrieval until evals prove vector search misses
+exact operational terms that lexical search would recover.
+```
+
+Week 4 memory hook:
+
+```text
+Diagnose the earliest failed stage first.
+Reranking cannot fix missing knowledge.
+Better knowledge coverage beats tuning when retrieval picks the closest wrong document.
+```
 
 ## Goal
 

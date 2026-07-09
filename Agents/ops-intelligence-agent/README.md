@@ -21,7 +21,7 @@ fallback, reranking, and the grounded LLM chain.
 - Week 1: local structured alert analysis baseline complete.
 - Week 2: runbook RAG baseline complete locally.
 - Week 3: advanced RAG complete locally.
-- Week 4: retrieval evaluation and architecture decision notes in progress.
+- Week 4: retrieval evaluation and architecture decisions complete locally.
 
 ## Week 1 Baseline
 
