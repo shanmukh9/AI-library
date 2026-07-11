@@ -45,6 +45,9 @@ rules. BM25 gives a second retrieval signal for exact tokens.
 1. Added bm25_retriever.py.
 2. Added query_bm25_runbooks.py for manual lexical search.
 3. Added evaluate_bm25_baseline.py to compare BM25 with vector + expansion + reranking.
+4. Added hybrid_retriever.py with Reciprocal Rank Fusion.
+5. Added query_hybrid_runbooks.py for manual hybrid inspection.
+6. Added evaluate_hybrid_rrf.py to compare vector-only, BM25-only, and hybrid retrieval.
 ```
 
 ## How BM25 Works Here
@@ -90,6 +93,12 @@ Run the comparison evaluator:
 python .\evaluate_bm25_baseline.py
 ```
 
+Run the hybrid RRF evaluator:
+
+```powershell
+python .\evaluate_hybrid_rrf.py
+```
+
 ## Results
 
 Measured locally:
@@ -100,6 +109,18 @@ BM25-only Top-1:               6/7
 BM25-only Top-3:               6/7
 Vector+Expansion+Rerank Top-1: 7/7
 Vector+Expansion+Rerank Top-3: 7/7
+```
+
+Hybrid RRF measured locally:
+
+```text
+Cases:                         7
+Vector+Expansion+Rerank Top-1: 7/7
+Vector+Expansion+Rerank Top-3: 7/7
+BM25-only Top-1:               6/7
+BM25-only Top-3:               6/7
+Hybrid RRF Top-1:              7/7
+Hybrid RRF Top-3:              7/7
 ```
 
 BM25 succeeded on exact-token cases:
@@ -126,6 +147,55 @@ BM25 matched the exact word "gateway" strongly, but it did not understand that
 retrieved the ALB 502 runbook correctly.
 ```
 
+## Hybrid RRF
+
+Hybrid RRF combines candidate lists by rank instead of adding raw scores.
+
+This matters because BM25 and vector scores use different scales:
+
+```text
+BM25 score:        13.3183
+Vector similarity: 0.7247
+```
+
+Adding those raw numbers would let BM25 dominate. RRF converts each result to a
+rank-based vote:
+
+```text
+RRF score = 1 / (k + rank)
+```
+
+If the same chunk appears in both retrievers, the text is deduplicated but the
+retrieval signal is preserved:
+
+```text
+retrieved_by = ["vector", "bm25"]
+```
+
+For `checkout throwing bad gateway`, raw BM25 retrieved 504 evidence because it
+matched the word `gateway`. Hybrid RRF succeeds only after both retrievers share
+the same preprocessing layer:
+
+```text
+raw query
+    |
+    v
+query expansion + normalization
+    |
+    v
+vector retrieval + BM25 retrieval
+    |
+    v
+RRF merge and dedupe
+```
+
+That distinction is important:
+
+```text
+Naive hybrid can amplify wrong evidence.
+Preprocessed hybrid can combine exact-word and meaning signals more safely.
+```
+
 ## Architecture Decision
 
 Do not wire BM25 into the production chain yet.
@@ -133,8 +203,8 @@ Do not wire BM25 into the production chain yet.
 Current decision:
 
 ```text
-Keep BM25 as an experimental baseline until hybrid retrieval proves it improves
-Top-1 or Top-3 without increasing false positives.
+Keep BM25 and Hybrid RRF as experimental retrieval modes until a larger eval set
+proves hybrid improves Top-1 or Top-3 without increasing false positives.
 ```
 
 ## Memory Hook
@@ -143,3 +213,5 @@ BM25 is the exact-word specialist.
 Vector search is the meaning specialist.
 Hybrid retrieval is justified only when measured evidence shows that both
 signals together outperform either one alone.
+
+RRF ranks candidates; it does not understand incidents by itself.

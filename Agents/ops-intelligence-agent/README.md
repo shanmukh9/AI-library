@@ -571,6 +571,12 @@ Compare BM25 against the current vector + expansion + reranking pipeline:
 python .\evaluate_bm25_baseline.py
 ```
 
+Compare vector-only, BM25-only, and Hybrid RRF:
+
+```powershell
+python .\evaluate_hybrid_rrf.py
+```
+
 Measured locally:
 
 ```text
@@ -581,11 +587,24 @@ Vector+Expansion+Rerank Top-1: 7/7
 Vector+Expansion+Rerank Top-3: 7/7
 ```
 
+Hybrid RRF measured locally:
+
+```text
+Vector+Expansion+Rerank Top-1: 7/7
+Vector+Expansion+Rerank Top-3: 7/7
+BM25-only Top-1:               6/7
+BM25-only Top-3:               6/7
+Hybrid RRF Top-1:              7/7
+Hybrid RRF Top-3:              7/7
+```
+
 Key learning:
 
 ```text
 BM25 is the exact-word specialist.
 Vector search is the meaning specialist.
-Hybrid retrieval should be added only when evals prove the combined signal is
-better than the existing retrieval path.
+Hybrid retrieval should be added to production only when evals prove the
+combined signal is better than the existing retrieval path.
+Naive hybrid can amplify wrong evidence; shared preprocessing is part of the
+retrieval design.
 ```
