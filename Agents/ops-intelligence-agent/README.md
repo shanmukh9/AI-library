@@ -22,6 +22,7 @@ fallback, reranking, and the grounded LLM chain.
 - Week 2: runbook RAG baseline complete locally.
 - Week 3: advanced RAG complete locally.
 - Week 4: retrieval evaluation and architecture decisions complete locally.
+- Week 5: BM25 lexical retrieval baseline complete locally.
 
 ## Week 1 Baseline
 
@@ -550,4 +551,41 @@ Expanded retrieval Top-1:      12/12
 Expanded retrieval Top-3:      12/12
 Negative no-match behavior:    2/2
 504 direct query Top-1 source: http-504-gateway-timeout.md
+```
+
+## Week 5 BM25 Lexical Retrieval
+
+Week 5 adds BM25 as an experimental retrieval baseline, not as the production
+default. BM25 is useful for exact operational tokens such as `HTTP 504`,
+`HTTP 502`, `OOMKilled`, and `RDS` connection phrases.
+
+Run a manual BM25 query:
+
+```powershell
+python .\query_bm25_runbooks.py "checkout HTTP 504 gateway timeout"
+```
+
+Compare BM25 against the current vector + expansion + reranking pipeline:
+
+```powershell
+python .\evaluate_bm25_baseline.py
+```
+
+Measured locally:
+
+```text
+Cases:                         7
+BM25-only Top-1:               6/7
+BM25-only Top-3:               6/7
+Vector+Expansion+Rerank Top-1: 7/7
+Vector+Expansion+Rerank Top-3: 7/7
+```
+
+Key learning:
+
+```text
+BM25 is the exact-word specialist.
+Vector search is the meaning specialist.
+Hybrid retrieval should be added only when evals prove the combined signal is
+better than the existing retrieval path.
 ```
