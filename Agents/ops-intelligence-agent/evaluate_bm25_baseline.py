@@ -45,6 +45,12 @@ TEST_CASES = [
         "expected_source": "api-cpu-saturation.md",
         "lesson": "Short vague queries are harder for exact keyword search.",
     },
+    {
+        "name": "iam_access_denied_after_deploy",
+        "query": "payment service AccessDenied after deploy",
+        "expected_source": "iam-accessdenied.md",
+        "lesson": "Missing incident-family knowledge should be added as runbook coverage, not forced into the nearest neighbor.",
+    },
 ]
 
 

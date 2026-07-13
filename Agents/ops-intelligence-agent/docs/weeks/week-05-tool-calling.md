@@ -48,6 +48,8 @@ rules. BM25 gives a second retrieval signal for exact tokens.
 4. Added hybrid_retriever.py with Reciprocal Rank Fusion.
 5. Added query_hybrid_runbooks.py for manual hybrid inspection.
 6. Added evaluate_hybrid_rrf.py to compare vector-only, BM25-only, and hybrid retrieval.
+7. Added iam-accessdenied.md to fix a missing incident-family knowledge gap.
+8. Added AccessDenied eval coverage to BM25 and Hybrid RRF evaluations.
 ```
 
 ## How BM25 Works Here
@@ -104,23 +106,31 @@ python .\evaluate_hybrid_rrf.py
 Measured locally:
 
 ```text
-Cases:                         7
-BM25-only Top-1:               6/7
-BM25-only Top-3:               6/7
-Vector+Expansion+Rerank Top-1: 7/7
-Vector+Expansion+Rerank Top-3: 7/7
+Cases:                         8
+BM25-only Top-1:               7/8
+BM25-only Top-3:               7/8
+Vector+Expansion+Rerank Top-1: 8/8
+Vector+Expansion+Rerank Top-3: 8/8
 ```
 
 Hybrid RRF measured locally:
 
 ```text
-Cases:                         7
-Vector+Expansion+Rerank Top-1: 7/7
-Vector+Expansion+Rerank Top-3: 7/7
-BM25-only Top-1:               6/7
-BM25-only Top-3:               6/7
-Hybrid RRF Top-1:              7/7
-Hybrid RRF Top-3:              7/7
+Cases:                         8
+Vector+Expansion+Rerank Top-1: 8/8
+Vector+Expansion+Rerank Top-3: 8/8
+BM25-only Top-1:               7/8
+BM25-only Top-3:               7/8
+Hybrid RRF Top-1:              8/8
+Hybrid RRF Top-3:              8/8
+```
+
+Knowledge coverage update:
+
+```text
+Runbook chunks: 40
+Added:          iam-accessdenied.md
+Eval case:      payment service AccessDenied after deploy
 ```
 
 BM25 succeeded on exact-token cases:
@@ -131,6 +141,7 @@ ALB 502 health checks failing      -> alb-502-health-checks.md
 pod OOMKilled                      -> kubernetes-oomkill.md
 lambda timeout failure             -> lambda-timeout.md
 RDS max database connections       -> rds-connection-pool.md
+payment service AccessDenied       -> iam-accessdenied.md
 ```
 
 BM25 failed on:
@@ -196,6 +207,30 @@ Naive hybrid can amplify wrong evidence.
 Preprocessed hybrid can combine exact-word and meaning signals more safely.
 ```
 
+## AccessDenied Knowledge Coverage
+
+`payment service AccessDenied after deploy` is a missing-knowledge case when no
+IAM or permission runbook exists. Vector search can drift toward a nearby
+deployment-related incident, and BM25 cannot retrieve evidence that is not in
+the corpus.
+
+The correct fix is:
+
+```text
+Add IAM AccessDenied runbook coverage.
+Add an eval case.
+Rebuild the runbook vector index.
+```
+
+The incorrect fixes are:
+
+```text
+lowering min_score
+forcing Lambda timeout evidence
+reranking wrong candidates
+patching the Lambda runbook to cover IAM failures
+```
+
 ## Architecture Decision
 
 Do not wire BM25 into the production chain yet.
@@ -215,3 +250,5 @@ Hybrid retrieval is justified only when measured evidence shows that both
 signals together outperform either one alone.
 
 RRF ranks candidates; it does not understand incidents by itself.
+Reranking fixes ordering; it does not fix absence.
+Closest neighbor is not coverage.

@@ -39,6 +39,11 @@ TEST_CASES = [
         "query": "api is slow",
         "expected_source": "api-cpu-saturation.md",
     },
+    {
+        "name": "iam_access_denied_after_deploy",
+        "query": "payment service AccessDenied after deploy",
+        "expected_source": "iam-accessdenied.md",
+    },
 ]
 
 

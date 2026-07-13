@@ -557,7 +557,7 @@ Negative no-match behavior:    2/2
 
 Week 5 adds BM25 as an experimental retrieval baseline, not as the production
 default. BM25 is useful for exact operational tokens such as `HTTP 504`,
-`HTTP 502`, `OOMKilled`, and `RDS` connection phrases.
+`HTTP 502`, `OOMKilled`, `AccessDenied`, and `RDS` connection phrases.
 
 Run a manual BM25 query:
 
@@ -580,22 +580,30 @@ python .\evaluate_hybrid_rrf.py
 Measured locally:
 
 ```text
-Cases:                         7
-BM25-only Top-1:               6/7
-BM25-only Top-3:               6/7
-Vector+Expansion+Rerank Top-1: 7/7
-Vector+Expansion+Rerank Top-3: 7/7
+Cases:                         8
+BM25-only Top-1:               7/8
+BM25-only Top-3:               7/8
+Vector+Expansion+Rerank Top-1: 8/8
+Vector+Expansion+Rerank Top-3: 8/8
 ```
 
 Hybrid RRF measured locally:
 
 ```text
-Vector+Expansion+Rerank Top-1: 7/7
-Vector+Expansion+Rerank Top-3: 7/7
-BM25-only Top-1:               6/7
-BM25-only Top-3:               6/7
-Hybrid RRF Top-1:              7/7
-Hybrid RRF Top-3:              7/7
+Vector+Expansion+Rerank Top-1: 8/8
+Vector+Expansion+Rerank Top-3: 8/8
+BM25-only Top-1:               7/8
+BM25-only Top-3:               7/8
+Hybrid RRF Top-1:              8/8
+Hybrid RRF Top-3:              8/8
+```
+
+Knowledge coverage update:
+
+```text
+Runbook chunks: 40
+Added:          iam-accessdenied.md
+Eval case:      payment service AccessDenied after deploy
 ```
 
 Key learning:
@@ -607,4 +615,6 @@ Hybrid retrieval should be added to production only when evals prove the
 combined signal is better than the existing retrieval path.
 Naive hybrid can amplify wrong evidence; shared preprocessing is part of the
 retrieval design.
+Missing incident-family knowledge should be added as runbook coverage, not
+patched into the nearest neighboring runbook.
 ```
