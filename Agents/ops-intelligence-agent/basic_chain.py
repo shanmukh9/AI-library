@@ -2,7 +2,8 @@ import json
 import urllib.error
 import urllib.request
 
-from runbook_rag import DEFAULT_MIN_SCORE, format_evidence, search_runbooks
+from evidence_acceptance import assess_evidence
+from hybrid_retriever import format_hybrid_evidence, hybrid_search_rrf
 
 
 CHAT_COMPLETIONS_URL = "http://127.0.0.1:1234/v1/chat/completions"
@@ -84,8 +85,9 @@ def call_chat_model(messages):
 
 
 system = """You are an expert CloudOps engineer.
-Use retrieved runbook evidence when it is provided. If no evidence is available,
-use your general CloudOps judgment and say the recommendation is not grounded in a runbook.
+The provided runbook evidence has passed an evidence-acceptance gate. Ground the
+root cause and immediate action in the alert and that evidence. Do not introduce
+systems, causes, or actions that are absent from both.
 Severity policy:
 - P1: customer-facing outage risk, repeated hard failures, crash loops on critical services, sustained CPU above 95 percent, database exhaustion, or active 5xx impact.
 - P2: degraded service, expiring certificates, capacity pressure, missed acknowledgement, or delayed observability without confirmed outage.
@@ -100,53 +102,119 @@ Respond ONLY with valid JSON:
 }
 Note: model_confidence is your qualitative opinion only. It is not calibrated probability."""
 
-for alert_index in test_alert_ids:
-    alert = alerts[alert_index]
+
+def build_non_analysis_response(assessment):
+    status_by_decision = {
+        "clarify": "clarification_required",
+        "no_coverage": "no_coverage",
+    }
+    return {
+        "status": status_by_decision[assessment["decision"]],
+        "grounding": "none",
+        "source": None,
+        "reason": assessment["reason"],
+        "clarifying_question": assessment["clarifying_question"],
+        "analysis": None,
+        "escalation_required": assessment["decision"] == "no_coverage",
+    }
+
+
+def analyze_alert(alert):
     try:
-        retrieved_evidence = search_runbooks(
+        raw_candidates = hybrid_search_rrf(
             alert["text"],
             top_k=3,
-            min_score=DEFAULT_MIN_SCORE,
-            use_reranking=True,
-            reranking_query=(
-                f"{alert['text']} "
-                "Identify the root cause and recommend an immediate action."
-            ),
         )
-        evidence_text = format_evidence(retrieved_evidence)
     except (FileNotFoundError, RuntimeError) as exc:
-        retrieved_evidence = []
-        evidence_text = f"No retrieved runbook evidence. Retrieval error: {exc}"
+        return {
+            "status": "retrieval_error",
+            "grounding": "none",
+            "source": None,
+            "reason": str(exc),
+            "clarifying_question": None,
+            "analysis": None,
+            "escalation_required": True,
+        }
 
-    response_content = call_chat_model(
-        [
-            {"role": "system", "content": system},
-            {
-                "role": "user",
-                "content": "\n\n".join(
-                    [
-                        f"Alert: {alert['text']}",
-                        f"Service: {alert['service']}",
-                        "Retrieved runbook evidence:",
-                        evidence_text,
-                    ]
-                ),
-            },
-        ]
-    )
-    result = parse_model_json(response_content)
-    print(f"\nAlert: {alert['text'][:60]}...")
-    if retrieved_evidence:
-        top = retrieved_evidence[0]
-        print(
-            "Top evidence: "
-            f"{top['source']} / {top['section']} "
-            f"(vector={top['similarity_score']:.4f}, "
-            f"bonus={top['rerank_bonus']:.2f}, "
-            f"final={top['score']:.4f}, "
-            f"intent={top['rerank_intent'] or 'none'})"
+    assessment = assess_evidence(alert["text"], raw_candidates)
+    if assessment["decision"] != "accept":
+        return build_non_analysis_response(assessment)
+
+    retrieved_evidence = assessment["evidence"]
+    evidence_text = format_hybrid_evidence(retrieved_evidence)
+
+    try:
+        response_content = call_chat_model(
+            [
+                {"role": "system", "content": system},
+                {
+                    "role": "user",
+                    "content": "\n\n".join(
+                        [
+                            f"Alert: {alert['text']}",
+                            f"Service: {alert['service']}",
+                            "Retrieved runbook evidence:",
+                            evidence_text,
+                        ]
+                    ),
+                },
+            ]
         )
-    else:
-        print("Top evidence: none")
-    print(f"Predicted: {result['severity']} | Expected: {alert['severity_hint']}")
-    print(f"Match: {'YES' if result['severity'] == alert['severity_hint'] else 'NO'}")
+        analysis = parse_model_json(response_content)
+    except (RuntimeError, ValueError) as exc:
+        return {
+            "status": "model_error",
+            "grounding": "runbook",
+            "source": retrieved_evidence[0]["source"],
+            "reason": str(exc),
+            "clarifying_question": None,
+            "analysis": None,
+            "escalation_required": True,
+            "evidence": retrieved_evidence,
+        }
+    return {
+        "status": "analysis_ready",
+        "grounding": "runbook",
+        "source": retrieved_evidence[0]["source"],
+        "reason": assessment["reason"],
+        "clarifying_question": None,
+        "analysis": analysis,
+        "escalation_required": False,
+        "evidence": retrieved_evidence,
+    }
+
+
+def main():
+    for alert_index in test_alert_ids:
+        alert = alerts[alert_index]
+        result = analyze_alert(alert)
+        print(f"\nAlert: {alert['text'][:60]}...")
+        print(f"Status: {result['status']} | Grounding: {result['grounding']}")
+        print(f"Gate reason: {result['reason']}")
+
+        if result["status"] == "analysis_ready":
+            top = result["evidence"][0]
+            print(
+                "Top evidence: "
+                f"{top['source']} / {top['section']} "
+                f"(rrf={top['rrf_score']:.5f}, "
+                f"retrieved_by={'+'.join(top['retrieved_by'])})"
+            )
+            analysis = result["analysis"]
+            print(
+                f"Predicted: {analysis['severity']} | "
+                f"Expected: {alert['severity_hint']}"
+            )
+            print(
+                f"Match: "
+                f"{'YES' if analysis['severity'] == alert['severity_hint'] else 'NO'}"
+            )
+        else:
+            print("Top evidence: none")
+            if result["clarifying_question"]:
+                print(f"Clarifying question: {result['clarifying_question']}")
+            print(f"Escalation required: {result['escalation_required']}")
+
+
+if __name__ == "__main__":
+    main()

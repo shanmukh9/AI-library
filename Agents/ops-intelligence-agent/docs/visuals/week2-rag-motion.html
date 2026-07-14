@@ -412,6 +412,138 @@
       font-size: 11px;
     }
 
+    .infographic {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(0, 210, 255, 0.2);
+      border-radius: 14px;
+      background: rgba(0, 210, 255, 0.035);
+      overflow: hidden;
+    }
+
+    .route-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .route-step {
+      position: relative;
+      min-height: 104px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(7, 11, 20, 0.72);
+      animation: routeStepIn 520ms var(--ease-out) both;
+    }
+
+    .route-step:nth-child(2) { animation-delay: 80ms; }
+    .route-step:nth-child(3) { animation-delay: 160ms; }
+    .route-step:nth-child(4) { animation-delay: 240ms; }
+
+    .route-step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      top: 50%;
+      right: -16px;
+      color: var(--blue);
+      font-size: 15px;
+      font-weight: 900;
+      transform: translateY(-50%);
+      text-shadow: 0 0 12px rgba(0,210,255,0.7);
+    }
+
+    .route-step strong,
+    .decision-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #fff;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .route-step span,
+    .decision-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .route-step.accept {
+      border-color: rgba(61,220,132,0.42);
+      box-shadow: inset 0 0 24px rgba(61,220,132,0.07);
+    }
+
+    .route-step.warn {
+      border-color: rgba(244,184,74,0.46);
+      box-shadow: inset 0 0 24px rgba(244,184,74,0.07);
+    }
+
+    .route-step.block {
+      border-color: rgba(255,107,95,0.46);
+      box-shadow: inset 0 0 24px rgba(255,107,95,0.07);
+    }
+
+    .decision-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .decision-card {
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.025);
+    }
+
+    .decision-card.active.accept {
+      border-color: var(--green);
+      background: rgba(61,220,132,0.09);
+    }
+
+    .decision-card.active.clarify {
+      border-color: var(--amber);
+      background: rgba(244,184,74,0.09);
+    }
+
+    .decision-card.active.coverage {
+      border-color: var(--red);
+      background: rgba(255,107,95,0.09);
+    }
+
+    .micro-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .micro-stat {
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .micro-stat strong {
+      display: block;
+      color: var(--blue);
+      font-size: 18px;
+      margin-bottom: 3px;
+    }
+
+    .micro-stat span {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.35;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
     .architecture {
       padding: 22px;
       display: grid;
@@ -804,6 +936,11 @@
       to { transform: scaleX(1); opacity: 1; }
     }
 
+    @keyframes routeStepIn {
+      from { opacity: 0; transform: translateX(-12px) scale(0.97); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
     @keyframes nodeScan {
       from { transform: translateX(-120%); opacity: 0; }
       30% { opacity: 1; }
@@ -901,6 +1038,20 @@
         white-space: nowrap;
       }
 
+      .route-map,
+      .decision-grid,
+      .micro-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .route-step:not(:last-child)::after {
+        content: "v";
+        top: auto;
+        right: 50%;
+        bottom: -18px;
+        transform: translateX(50%);
+      }
+
       .flow-monitor {
         grid-template-columns: 1fr auto auto;
       }
@@ -937,7 +1088,7 @@
         <p class="subtitle">A single weekly review surface for what was built, what was learned, how the system works, and how to explain it later.</p>
       </div>
       <div class="status-panel">
-        <strong id="globalStatus">3 weeks online</strong>
+        <strong id="globalStatus">5 weeks online</strong>
         <span>Target role: AI Systems Engineer for AIOps</span>
       </div>
     </header>
@@ -975,14 +1126,14 @@
 
     <footer class="footer">
       <button class="nav-btn" id="prevBtn" type="button">Previous week</button>
-      <span id="footerCounter">Week 3 of 12</span>
+      <span id="footerCounter">Week 5 of 12</span>
       <button class="nav-btn" id="replayBtn" type="button">Replay flow</button>
       <button class="nav-btn" id="nextBtn" type="button">Next week</button>
     </footer>
   </main>
 
   <script>
-    const completedUntil = 3;
+    const completedUntil = 5;
 
     const weeks = [
       {
@@ -1055,8 +1206,56 @@
         talking: "I improved retrieval in stages: normalization unifies equivalent failure wording, expansion clarifies controlled shorthand, metadata narrows where we search, fallback recovers visibly when metadata is wrong, and reranking chooses the section that best answers the task. The final Top 3 reranked evidence now grounds the main local LLM chain.",
         nodes: ["query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "metadata-fallback", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"]
       },
-      {n:4, phase:"Advanced RAG", title:"Architecture Decisions", status:"Planned", concept:"Document when to use simple vector search, hybrid search, routing, or graph-style retrieval.", built:["ADR notes", "retrieval tradeoff map"], metrics:["Decision clarity", "Latency notes"], talking:"I will justify architecture choices instead of blindly adding frameworks.", nodes:["rag-router"]},
-      {n:5, phase:"Agent Core", title:"Tool Calling and Typed Outputs", status:"Planned", concept:"Move from recommendations to safe typed tool requests with strict schemas.", built:["typed response schema", "read-only simulated tools"], metrics:["Schema validation pass rate"], talking:"Operations tools need contracts, not loose text.", nodes:["tool-schema", "tools"]},
+      {
+        n: 4,
+        phase: "Production RAG",
+        title: "Failure Diagnosis, Coverage, and Architecture Decisions",
+        status: "Complete",
+        concept: "Week 4 stops treating every miss as a vector-search problem. Failures are classified by stage: signal gate, missing knowledge, vague wording, threshold, metadata, wrong section, or LLM reasoning. The 504 case proves why missing incident-family knowledge requires a new runbook rather than more reranking.",
+        built: [
+          "evaluate_retrieval_diagnosis.py - PASS / REVIEW / FAIL matrix",
+          "evaluate_failure_stage_diagnosis.py - failure ownership",
+          "evaluate_reranking_sensitivity.py - bonus experiment",
+          "evaluate_reranking_broader.py - regression safety check",
+          "http-504-gateway-timeout.md - dedicated coverage",
+          "evaluate_signal_gate_coverage.py - false-positive and false-negative checks"
+        ],
+        metrics: [
+          "Failure-stage diagnosis: 5/5",
+          "Signal gate: 10/10",
+          "Expanded retrieval: 12/12",
+          "Negative no-match: 2/2",
+          "Broader reranking: 15/16",
+          "504 source: correct runbook"
+        ],
+        talking: "I learned to diagnose the failure stage before tuning retrieval. A threshold cannot create missing knowledge, and reranking cannot repair the wrong incident family. For HTTP 504, the correct architecture change was adding dedicated runbook coverage and an eval case.",
+        nodes: ["alert-input", "signal-gate", "embedding", "vector-search", "min-score", "reranker", "failure-diagnosis", "knowledge-coverage", "retrieval-eval", "final-top3"]
+      },
+      {
+        n: 5,
+        phase: "Production RAG",
+        title: "BM25, Hybrid RRF, and Evidence Acceptance",
+        status: "Complete",
+        concept: "Week 5 combines semantic and exact-token retrieval, then proves that ranking is not enough. BM25 and vector candidates are fused by reciprocal rank, negative evals reveal unsafe nearest-neighbor answers, and a deterministic post-RRF gate returns accept, clarify, or no_coverage before the LLM can act.",
+        built: [
+          "bm25_retriever.py - lexical exact-token baseline",
+          "hybrid_retriever.py - vector + BM25 reciprocal rank fusion",
+          "iam-accessdenied.md - missing incident-family coverage",
+          "evaluate_hybrid_rrf.py - positive and negative evaluation",
+          "evidence_acceptance.py - post-RRF safety decisions",
+          "basic_chain.py - Python-owned grounded response contract"
+        ],
+        metrics: [
+          "Vector positive Top-1: 8/8",
+          "BM25 positive Top-1: 7/8",
+          "Hybrid positive Top-1: 8/8",
+          "Raw Hybrid negative reject: 0/4",
+          "Gate decisions: 12/12",
+          "Accepted sources: 8/8"
+        ],
+        talking: "I added BM25 for exact operational tokens and fused it with semantic retrieval using RRF because their raw scores are not comparable. Negative cases exposed that retriever agreement is not correctness. A deterministic acceptance gate now controls whether validated evidence reaches Gemma, whether the user is asked to clarify, or whether the system reports missing coverage.",
+        nodes: ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "reranker", "rrf-fusion", "acceptance-gate", "runbook-context", "chat-model", "python-contract", "json-output"]
+      },
       {n:6, phase:"Agent Core", title:"LangGraph and Human Approval", status:"Planned", concept:"Represent incident analysis as a stateful workflow with human approval before risky actions.", built:["state graph", "approval gate"], metrics:["Risky actions blocked"], talking:"Human-in-the-loop checkpoints protect production systems.", nodes:["langgraph", "human-gate"]},
       {n:7, phase:"Agent Core", title:"Agent Specialization", status:"Planned", concept:"Split responsibilities only if evals prove specialization helps.", built:["triage/retrieval/remediation separation"], metrics:["Quality vs latency tradeoff"], talking:"Multi-agent design must be justified by measurable value.", nodes:["multi-agent"]},
       {n:8, phase:"Memory + Context", title:"Incident Memory", status:"Planned", concept:"Use prior incidents as bounded memory without overloading the prompt.", built:["incident memory store", "history retrieval"], metrics:["similar incident hit rate"], talking:"Memory is useful only when it is bounded and relevant.", nodes:["memory"]},
@@ -1075,17 +1274,25 @@
       {id:"metadata-fallback", phase:"Retrieval Guardrails", label:"Observable Fallback", sub:"Retries all chunks when filtered evidence fails", week:3, icon:"FB"},
       {id:"embedding", phase:"Retrieval", label:"Embedding Model", sub:"Text becomes vector", week:2, icon:"EM"},
       {id:"vector-search", phase:"Retrieval", label:"Vector Search", sub:"Cosine similarity ranking", week:2, icon:"VS"},
+      {id:"bm25-search", phase:"Retrieval", label:"BM25 Lexical Search", sub:"Exact identifiers and operational tokens", week:5, icon:"BM"},
       {id:"min-score", phase:"Retrieval Guardrails", label:"min_score Filter", sub:"Drops weak chunks below 0.60", week:2, icon:"MS"},
       {id:"reranker", phase:"Advanced RAG", label:"Intent-Aware Reranker", sub:"Cause/action/symptom ordering bonuses", week:3, icon:"RR"},
-      {id:"final-top3", phase:"Advanced RAG", label:"Final Top 3", sub:"Highest final scores after reranking", week:3, icon:"T3"},
+      {id:"rrf-fusion", phase:"Advanced RAG", label:"Reciprocal Rank Fusion", sub:"Merges vector and BM25 ranks", week:5, icon:"RF"},
+      {id:"final-top3", phase:"Advanced RAG", label:"Ranked Candidates", sub:"Top evidence candidates, not yet trusted", week:3, icon:"T3"},
+      {id:"failure-diagnosis", phase:"Evidence Validation", label:"Failure-Stage Diagnosis", sub:"Gate, coverage, retrieval, ranking, or LLM", week:4, icon:"DX"},
+      {id:"knowledge-coverage", phase:"Evidence Validation", label:"Knowledge Coverage", sub:"Missing incident family requires a runbook", week:4, icon:"KC"},
+      {id:"acceptance-gate", phase:"Evidence Validation", label:"Evidence Acceptance Gate", sub:"Accept, clarify, or no coverage", week:5, icon:"AG"},
+      {id:"clarification-output", phase:"Decision Branch", label:"Clarification Required", sub:"Ask for missing incident detail; skip LLM", week:5, icon:"?"},
+      {id:"coverage-output", phase:"Decision Branch", label:"No Coverage", sub:"Escalate safely; skip LLM", week:5, icon:"NC"},
       {id:"runbook-context", phase:"Context", label:"Runbook Evidence", sub:"Grounded chunks enter prompt", week:2, icon:"RB"},
-      {id:"rag-router", phase:"Advanced RAG", label:"Retrieval Router", sub:"Future source selection", week:4, icon:"RT"},
       {id:"chat-model", phase:"Generation", label:"Local Gemma Chat Model", sub:"Generates structured analysis", week:1, icon:"GM"},
       {id:"severity-policy", phase:"Generation", label:"Severity Policy", sub:"Maps evidence to P1/P2/P3", week:2, icon:"P1"},
+      {id:"python-contract", phase:"Output", label:"Python Safety Contract", sub:"Code owns status and grounding", week:5, icon:"PY"},
       {id:"json-parser", phase:"Output", label:"JSON Parser", sub:"Cleans and loads model text", week:1, icon:"{}"},
       {id:"json-output", phase:"Output", label:"Structured JSON Output", sub:"Root cause, severity, action", week:1, icon:"JS"},
-      {id:"tool-schema", phase:"Agent Core", label:"Typed Tool Schema", sub:"Future strict actions", week:5, icon:"TS"},
-      {id:"tools", phase:"Agent Core", label:"Tool Connectors", sub:"Future Jira/cloud hooks", week:5, icon:"TL"},
+      {id:"retrieval-eval", phase:"Evaluation", label:"Retrieval Eval Suite", sub:"Positive, negative, stage, and regression checks", week:4, icon:"EV"},
+      {id:"tool-schema", phase:"Agent Core", label:"Typed Tool Schema", sub:"Future strict actions", week:6, icon:"TS"},
+      {id:"tools", phase:"Agent Core", label:"Tool Connectors", sub:"Future Jira/cloud hooks", week:6, icon:"TL"},
       {id:"langgraph", phase:"Agent Core", label:"State Graph", sub:"Future workflow routing", week:6, icon:"LG"},
       {id:"human-gate", phase:"Agent Core", label:"Human Approval", sub:"Future risky-action checkpoint", week:6, icon:"HG"},
       {id:"multi-agent", phase:"Agent Core", label:"Specialized Agents", sub:"Future only if justified", week:7, icon:"MA"},
@@ -1102,6 +1309,11 @@
     const vectorFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "embedding", "vector-search", "min-score", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
     const rerankedFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
     const fallbackFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "metadata-filter", "metadata-fallback", "embedding", "vector-search", "min-score", "reranker", "final-top3", "runbook-context", "chat-model", "severity-policy", "json-output"];
+    const diagnosisFlow = ["alert-input", "signal-gate", "embedding", "vector-search", "min-score", "reranker", "final-top3", "failure-diagnosis", "knowledge-coverage", "retrieval-eval"];
+    const coverageFixFlow = ["alert-input", "signal-gate", "embedding", "vector-search", "min-score", "final-top3", "failure-diagnosis", "knowledge-coverage", "retrieval-eval"];
+    const hybridAcceptFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "reranker", "rrf-fusion", "final-top3", "acceptance-gate", "runbook-context", "chat-model", "python-contract", "json-output"];
+    const hybridClarifyFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "clarification-output", "python-contract"];
+    const hybridNoCoverageFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "coverage-output", "python-contract"];
 
     const weekGrid = document.getElementById("weekGrid");
     const missionPanel = document.getElementById("missionPanel");
@@ -1122,8 +1334,15 @@
     let animationTimers = [];
     let activeViewTransition = null;
 
-    let activeWeek = 3;
-    let scenario = "reranked";
+    let activeWeek = 5;
+    let scenario = "accept";
+
+    function defaultScenarioForWeek(weekNumber) {
+      if (weekNumber === 3) return "reranked";
+      if (weekNumber === 4) return "diagnosis";
+      if (weekNumber === 5) return "accept";
+      return "incident";
+    }
 
     function renderWeekGrid() {
       weekGrid.innerHTML = weeks.map((week) => {
@@ -1146,13 +1365,111 @@
           if (!weeks.some((week) => week.n === selectedWeek)) return;
           transitionTo({
             week: selectedWeek,
-            scenario: selectedWeek === 3 ? "reranked" : "incident"
+            scenario: defaultScenarioForWeek(selectedWeek)
           });
         });
       });
     }
 
+    function renderWeek4Lab() {
+      if (scenario === "coverage-fix") {
+        return `
+          <div class="section-label"><span>504 coverage repair</span><span>fix the right layer</span></div>
+          <div class="infographic">
+            <div class="route-map">
+              <div class="route-step warn"><strong>HTTP 504 Query</strong><span>Signal is valid, so retrieval should run.</span></div>
+              <div class="route-step block"><strong>502 Neighbor</strong><span>Nearest evidence is related but represents another incident.</span></div>
+              <div class="route-step warn"><strong>Diagnose</strong><span>Missing knowledge, not a threshold or reranking failure.</span></div>
+              <div class="route-step accept"><strong>Add Coverage</strong><span>Create the 504 runbook, rebuild the index, add an eval.</span></div>
+            </div>
+            <div class="micro-stats">
+              <div class="micro-stat"><strong>5/5</strong><span>failure-stage diagnosis</span></div>
+              <div class="micro-stat"><strong>12/12</strong><span>expanded retrieval</span></div>
+              <div class="micro-stat"><strong>504</strong><span>correct dedicated source</span></div>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="section-label"><span>Failure ownership map</span><span>diagnose before tuning</span></div>
+        <div class="infographic">
+          <div class="route-map">
+            <div class="route-step"><strong>1. Entry</strong><span>Did the operational signal gate allow the incident?</span></div>
+            <div class="route-step"><strong>2. Evidence</strong><span>Does the knowledge base contain the incident family?</span></div>
+            <div class="route-step"><strong>3. Retrieval</strong><span>Did threshold, metadata, or ranking lose valid evidence?</span></div>
+            <div class="route-step accept"><strong>4. Generation</strong><span>Did the LLM reason correctly from valid context?</span></div>
+          </div>
+          <div class="decision-grid">
+            <div class="decision-card"><strong>Missing knowledge</strong><span>Add a runbook and an eval. Tuning cannot create facts.</span></div>
+            <div class="decision-card"><strong>Wrong section</strong><span>Rerank valid candidates using section intent.</span></div>
+            <div class="decision-card"><strong>Vague query</strong><span>Clarify or expand only when meaning is known.</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWeek5Lab() {
+      const decisions = `
+        <div class="decision-grid">
+          <div class="decision-card ${scenario === "accept" ? "active accept" : ""}"><strong>Accept</strong><span>Validated runbook evidence enters Gemma.</span></div>
+          <div class="decision-card ${scenario === "clarify" ? "active clarify" : ""}"><strong>Clarify</strong><span>Known family, missing problem detail. Skip LLM.</span></div>
+          <div class="decision-card ${scenario === "no-coverage" ? "active coverage" : ""}"><strong>No Coverage</strong><span>Unsupported incident family. Escalate safely.</span></div>
+        </div>
+      `;
+
+      if (scenario === "clarify") {
+        return `
+          <div class="section-label"><span>Acceptance gate</span><span>certificate error</span></div>
+          <div class="infographic">
+            <div class="route-map">
+              <div class="route-step"><strong>Raw Query</strong><span>certificate error</span></div>
+              <div class="route-step warn"><strong>Hybrid Result</strong><span>SSL expiry is related and ranks first.</span></div>
+              <div class="route-step warn"><strong>Intent Check</strong><span>Family matches; expiry category is unsupported.</span></div>
+              <div class="route-step accept"><strong>Ask, Do Not Guess</strong><span>Expired, untrusted, hostname mismatch, or TLS failure?</span></div>
+            </div>
+            ${decisions}
+          </div>
+        `;
+      }
+
+      if (scenario === "no-coverage") {
+        return `
+          <div class="section-label"><span>Acceptance gate</span><span>Kafka lag</span></div>
+          <div class="infographic">
+            <div class="route-map">
+              <div class="route-step"><strong>Raw Query</strong><span>Kafka consumer lag after deployment.</span></div>
+              <div class="route-step block"><strong>RRF Top-1</strong><span>IAM Symptoms via BM25, RRF 0.01639.</span></div>
+              <div class="route-step block"><strong>Alignment Check</strong><span>Kafka does not match IAM or Kubernetes.</span></div>
+              <div class="route-step accept"><strong>Safe Exit</strong><span>No coverage, no RCA, escalation required.</span></div>
+            </div>
+            ${decisions}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="section-label"><span>Grounded accept route</span><span>Lambda timeout</span></div>
+        <div class="infographic">
+          <div class="route-map">
+            <div class="route-step"><strong>Dual Retrieval</strong><span>Vector understands meaning; BM25 catches exact tokens.</span></div>
+            <div class="route-step"><strong>RRF</strong><span>Fuse ranks because raw score scales differ.</span></div>
+            <div class="route-step accept"><strong>Gate Accepts</strong><span>Lambda family and timeout category align.</span></div>
+            <div class="route-step accept"><strong>Grounded RCA</strong><span>Validated evidence reaches Gemma; Python owns status.</span></div>
+          </div>
+          ${decisions}
+          <div class="micro-stats">
+            <div class="micro-stat"><strong>8/8</strong><span>hybrid positive Top-1</span></div>
+            <div class="micro-stat"><strong>0/4</strong><span>raw hybrid negative rejection</span></div>
+            <div class="micro-stat"><strong>12/12</strong><span>gate decisions</span></div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderScoreLab(week) {
+      if (week.n === 4) return renderWeek4Lab();
+      if (week.n === 5) return renderWeek5Lab();
       if (week.n !== 3) return "";
 
       if (scenario === "vector") {
@@ -1286,6 +1603,26 @@
           "Section bonuses stay inside the strongest original runbook."
         ];
       }
+      if (weekNumber === 4) {
+        return [
+          "A miss must be assigned to the correct stage before changing architecture.",
+          "Threshold tuning cannot create missing incident-family knowledge.",
+          "Reranking repairs ordering, not absence or wrong-runbook coverage.",
+          "A dedicated 504 runbook is safer than borrowing neighboring 502 evidence.",
+          "Sensitivity experiments need broader regression evals before defaults change.",
+          "PASS, REVIEW, and FAIL separate code defects from architecture judgment."
+        ];
+      }
+      if (weekNumber === 5) {
+        return [
+          "BM25 is the exact-token specialist; vectors are the meaning specialist.",
+          "RRF combines ranks because BM25 and vector scores use different scales.",
+          "Retriever agreement is consensus, not correctness.",
+          "Positive Top-1 alone hides false-positive answers on unknown incidents.",
+          "The post-RRF gate returns accept, clarify, or no_coverage.",
+          "Python owns grounding and status; the LLM analyzes accepted evidence only."
+        ];
+      }
       return [
         "Planned week. Do not claim evidence before implementation.",
         "Add measurements after the build is complete.",
@@ -1300,6 +1637,11 @@
       if (week.n === 3 && scenario === "vector") selectedFlow = vectorFlow;
       if (week.n === 3 && scenario === "reranked") selectedFlow = rerankedFlow;
       if (week.n === 3 && scenario === "fallback") selectedFlow = fallbackFlow;
+      if (week.n === 4 && scenario === "diagnosis") selectedFlow = diagnosisFlow;
+      if (week.n === 4 && scenario === "coverage-fix") selectedFlow = coverageFixFlow;
+      if (week.n === 5 && scenario === "accept") selectedFlow = hybridAcceptFlow;
+      if (week.n === 5 && scenario === "clarify") selectedFlow = hybridClarifyFlow;
+      if (week.n === 5 && scenario === "no-coverage") selectedFlow = hybridNoCoverageFlow;
       const flowIds = new Set(selectedFlow);
       const visibleNodes = architectureNodes.filter(
         (node) => node.week <= Math.min(12, week.n + 1)
@@ -1334,6 +1676,14 @@
       architectureStack.innerHTML = html;
     }
 
+    function completionLabel() {
+      if (activeWeek === 5 && scenario === "clarify") return "Clarification ready; LLM skipped";
+      if (activeWeek === 5 && scenario === "no-coverage") return "Coverage gap escalated; LLM skipped";
+      if (activeWeek === 4 && scenario === "coverage-fix") return "Coverage repaired and evaluated";
+      if (activeWeek === 4) return "Failure stage diagnosed";
+      return "Grounded response complete";
+    }
+
     function replayArchitecture({follow = false} = {}) {
       animationTimers.forEach((timer) => clearTimeout(timer));
       animationTimers = [];
@@ -1362,7 +1712,7 @@
         });
         flowProgress.style.width = "100%";
         flowCounter.textContent = `${activeNodes.length} / ${activeNodes.length}`;
-        flowState.textContent = "Grounded response complete";
+        flowState.textContent = completionLabel();
         replayBtn.disabled = false;
         flowReplayBtn.disabled = false;
         return;
@@ -1405,7 +1755,7 @@
             const finishTimer = setTimeout(() => {
               node.classList.remove("processing");
               node.classList.add("completed");
-              flowState.textContent = "Grounded response complete";
+              flowState.textContent = completionLabel();
               replayBtn.disabled = false;
               flowReplayBtn.disabled = false;
             }, 520);
@@ -1441,7 +1791,7 @@
     }
 
     function renderControls(week) {
-      scenarioControls.style.display = week.n === 2 || week.n === 3 ? "flex" : "none";
+      scenarioControls.style.display = [2, 3, 4, 5].includes(week.n) ? "flex" : "none";
       if (week.n === 2) {
         scenarioControls.innerHTML = `
           <button class="scenario-btn ${scenario === "incident" ? "active" : ""}" data-scenario="incident" type="button">Incident</button>
@@ -1455,6 +1805,19 @@
           <button class="scenario-btn ${scenario === "fallback" ? "active" : ""}" data-scenario="fallback" type="button">Fallback</button>
         `;
         scenarioLabel.textContent = `${scenario} flow`;
+      } else if (week.n === 4) {
+        scenarioControls.innerHTML = `
+          <button class="scenario-btn ${scenario === "diagnosis" ? "active" : ""}" data-scenario="diagnosis" type="button">Failure map</button>
+          <button class="scenario-btn ${scenario === "coverage-fix" ? "active" : ""}" data-scenario="coverage-fix" type="button">504 coverage</button>
+        `;
+        scenarioLabel.textContent = scenario === "coverage-fix" ? "coverage repair flow" : "failure diagnosis flow";
+      } else if (week.n === 5) {
+        scenarioControls.innerHTML = `
+          <button class="scenario-btn ${scenario === "accept" ? "active" : ""}" data-scenario="accept" type="button">Accept</button>
+          <button class="scenario-btn ${scenario === "clarify" ? "active" : ""}" data-scenario="clarify" type="button">Clarify</button>
+          <button class="scenario-btn ${scenario === "no-coverage" ? "active" : ""}" data-scenario="no-coverage" type="button">No coverage</button>
+        `;
+        scenarioLabel.textContent = `${scenario.replace("-", " ")} route`;
       } else {
         scenarioControls.innerHTML = "";
         scenarioLabel.textContent = "week architecture";
@@ -1497,7 +1860,7 @@
       const nextWeek = Math.max(1, activeWeek - 1);
       transitionTo({
         week: nextWeek,
-        scenario: nextWeek === 3 ? "reranked" : "incident"
+        scenario: defaultScenarioForWeek(nextWeek)
       });
     });
 
@@ -1505,7 +1868,7 @@
       const nextWeek = Math.min(12, activeWeek + 1);
       transitionTo({
         week: nextWeek,
-        scenario: nextWeek === 3 ? "reranked" : "incident"
+        scenario: defaultScenarioForWeek(nextWeek)
       });
     });
 

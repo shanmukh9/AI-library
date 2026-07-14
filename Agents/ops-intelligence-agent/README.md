@@ -618,3 +618,52 @@ retrieval design.
 Missing incident-family knowledge should be added as runbook coverage, not
 patched into the nearest neighboring runbook.
 ```
+
+### Evidence Acceptance Gate
+
+The retrieval eval now includes four negative cases in addition to the eight
+queries with known runbook coverage. This exposed that perfect positive Top-1
+does not guarantee safe abstention:
+
+```text
+Vector negative rejection: 1/4 (25.0%)
+BM25 negative rejection:   0/4 (0.0%)
+Hybrid negative rejection: 0/4 (0.0%)
+```
+
+`evidence_acceptance.py` evaluates Hybrid RRF candidates after ranking and
+returns one of three structured decisions:
+
+```text
+accept      -> expose validated runbook evidence
+clarify     -> ask for missing incident details
+no_coverage -> do not force the nearest runbook into context
+```
+
+Current measured learning-set result:
+
+```text
+Decision accuracy:        12/12
+Accepted source accuracy:  8/8
+```
+
+The gate uses incident-family and problem-category signals. It remains
+experimental because the 12-case set is intentionally small.
+
+`basic_chain.py` now applies the gate before chat generation:
+
+```text
+accept      -> validated evidence enters the LLM
+clarify     -> structured clarification response; LLM call skipped
+no_coverage -> structured escalation response; LLM call skipped
+```
+
+Python owns the outer safety contract (`status`, `grounding`, `source`, gate
+reason, clarification, and escalation). The LLM generates only the nested RCA
+for accepted evidence.
+
+Run the combined retrieval and acceptance evaluation:
+
+```powershell
+python .\evaluate_hybrid_rrf.py
+```

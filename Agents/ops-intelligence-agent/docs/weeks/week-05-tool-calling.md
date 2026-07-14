@@ -252,3 +252,87 @@ signals together outperform either one alone.
 RRF ranks candidates; it does not understand incidents by itself.
 Reranking fixes ordering; it does not fix absence.
 Closest neighbor is not coverage.
+
+## Evidence Acceptance and Abstention
+
+Positive-only retrieval metrics hid an important failure. The first eight eval
+queries all had a valid runbook, so Hybrid RRF scored 8/8 while still returning
+irrelevant evidence for unknown or ambiguous incidents.
+
+Four negative cases were added:
+
+```text
+Kafka consumer lag rising after deployment       -> no_coverage
+Redis replica synchronization failed             -> no_coverage
+certificate error                                -> clarify
+pod CrashLoopBackOff, what should I check first? -> clarify
+```
+
+Raw retrieval baseline:
+
+```text
+Vector negative rejection: 1/4 (25.0%)
+BM25 negative rejection:   0/4 (0.0%)
+Hybrid negative rejection: 0/4 (0.0%)
+```
+
+This does not mean Hybrid RRF ranked candidates incorrectly. It means ranking
+alone cannot decide whether any candidate is grounded enough to use.
+
+`evidence_acceptance.py` adds a separate post-RRF gate:
+
+```text
+Hybrid candidates
+       |
+       v
+Incident-family and problem-category alignment
+       |
+       +-- accept      -> expose validated evidence
+       +-- clarify     -> ask for the missing incident detail
+       +-- no_coverage -> report that no supported runbook aligns
+```
+
+Measured locally on the current 12-case learning set:
+
+```text
+Gate decision accuracy:  12/12
+Accepted source accuracy: 8/8
+```
+
+These numbers validate the current examples, not production generalization.
+The gate uses a small controlled incident taxonomy and needs broader paraphrase,
+near-miss, and adversarial eval cases before it can be treated as production
+ready.
+
+The gate is now wired into `basic_chain.py` through a Python-owned response
+contract:
+
+```text
+accept      -> call the chat model with validated Hybrid RRF evidence
+clarify     -> return clarification_required without calling the chat model
+no_coverage -> return no_coverage and require escalation without calling the model
+```
+
+The LLM still generates only the nested grounded analysis. Python owns the
+status, grounding source, gate reason, clarification question, and escalation
+state, so the model cannot overwrite those safety decisions.
+
+Measured branch checks:
+
+```text
+Kafka lag:        no_coverage, no analysis, escalation required
+certificate error: clarification_required, no analysis
+Lambda timeout:   analysis_ready, source=lambda-timeout.md, severity=P1
+```
+
+The accepted Lambda path took about 140 seconds on the current local Gemma
+setup. The two non-accepted paths returned without paying chat-generation
+latency.
+
+Memory hook:
+
+```text
+Retriever agreement is consensus, not correctness.
+Similarity is relevance, not proof.
+RRF ranks evidence; the acceptance gate decides whether evidence is usable.
+```

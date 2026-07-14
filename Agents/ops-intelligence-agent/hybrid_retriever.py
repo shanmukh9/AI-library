@@ -83,3 +83,41 @@ def hybrid_search_rrf(
         reverse=True,
     )
     return ranked[:top_k]
+
+
+def format_hybrid_evidence(results):
+    if not results:
+        return "No accepted runbook evidence."
+
+    formatted = []
+    for index, result in enumerate(results, start=1):
+        vector_score = (
+            f"{result['vector_score']:.4f}"
+            if result["vector_score"] is not None
+            else "none"
+        )
+        bm25_score = (
+            f"{result['bm25_score']:.4f}"
+            if result["bm25_score"] is not None
+            else "none"
+        )
+        formatted.append(
+            "\n".join(
+                [
+                    f"[{index}] {result['runbook']} / {result['section']}",
+                    f"source: {result['source']}",
+                    (
+                        "metadata: "
+                        f"platform={result['metadata'].get('platform', 'unknown')}, "
+                        f"category={result['metadata'].get('category', 'unknown')}"
+                    ),
+                    f"retrieved_by: {', '.join(result['retrieved_by'])}",
+                    (
+                        f"scores: rrf={result['rrf_score']:.5f}, "
+                        f"vector={vector_score}, bm25={bm25_score}"
+                    ),
+                    result["text"],
+                ]
+            )
+        )
+    return "\n\n".join(formatted)
