@@ -286,6 +286,159 @@
       margin-bottom: 18px;
     }
 
+    .case-study {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 210, 255, 0.28);
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(0, 210, 255, 0.075), rgba(165, 107, 255, 0.055)),
+        rgba(4, 11, 19, 0.86);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.035);
+    }
+
+    .case-study::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: linear-gradient(180deg, var(--blue), var(--purple));
+      box-shadow: 0 0 20px rgba(0, 210, 255, 0.45);
+    }
+
+    .case-study[data-tone="success"] {
+      border-color: rgba(61, 220, 132, 0.38);
+    }
+
+    .case-study[data-tone="success"]::before {
+      background: var(--green);
+    }
+
+    .case-study[data-tone="warning"] {
+      border-color: rgba(255, 188, 92, 0.42);
+    }
+
+    .case-study[data-tone="warning"]::before {
+      background: #ffbc5c;
+    }
+
+    .case-study[data-tone="blocked"] {
+      border-color: rgba(255, 104, 120, 0.4);
+    }
+
+    .case-study[data-tone="blocked"]::before {
+      background: #ff6878;
+    }
+
+    .case-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .case-kicker,
+    .case-step {
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .case-step {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border: 1px solid rgba(0, 210, 255, 0.22);
+      border-radius: 999px;
+      background: rgba(0, 210, 255, 0.07);
+    }
+
+    .case-head h3 {
+      margin-top: 5px;
+      color: #f6fbff;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .case-query {
+      padding: 13px 14px;
+      border: 1px solid rgba(255,255,255,0.075);
+      border-radius: 12px;
+      color: #d9edf6;
+      background: rgba(0,0,0,0.28);
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .case-transform {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .case-cell {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.028);
+    }
+
+    .case-cell span,
+    .case-insight span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .case-cell strong {
+      display: block;
+      color: #e6f0f7;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .case-arrow {
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .case-insight {
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: #d5e2eb;
+      background: rgba(165, 107, 255, 0.08);
+      border-left: 2px solid var(--purple);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .case-insight strong {
+      color: #ffffff;
+      font-weight: 750;
+    }
+
+    .case-study.updating .case-query,
+    .case-study.updating .case-cell,
+    .case-study.updating .case-insight {
+      animation: caseResolve 460ms var(--ease-out) both;
+    }
+
     .module-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -490,7 +643,7 @@
 
     .decision-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
     }
 
@@ -504,6 +657,11 @@
     .decision-card.active.accept {
       border-color: var(--green);
       background: rgba(61,220,132,0.09);
+    }
+
+    .decision-card.active.incident {
+      border-color: var(--blue);
+      background: rgba(0,210,255,0.09);
     }
 
     .decision-card.active.clarify {
@@ -626,6 +784,138 @@
       cursor: wait;
     }
 
+    .learning-guide {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(150px, 0.8fr);
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid rgba(165,107,255,0.24);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(165,107,255,0.08), rgba(0,210,255,0.045));
+      min-height: 124px;
+    }
+
+    .guide-copy {
+      min-width: 0;
+    }
+
+    .guide-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+      color: var(--blue);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .guide-meta span + span::before {
+      content: "/";
+      margin-right: 8px;
+      color: rgba(255,255,255,0.22);
+    }
+
+    .guide-copy h3 {
+      margin-bottom: 6px;
+      color: #fff;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .guide-copy p {
+      color: #c7d2dc;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .memory-hook {
+      align-self: stretch;
+      padding: 11px;
+      border-radius: 10px;
+      border: 1px solid rgba(61,220,132,0.2);
+      background: rgba(61,220,132,0.06);
+    }
+
+    .memory-hook span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--green);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .memory-hook strong {
+      display: block;
+      color: #d8e5de;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .flow-controls {
+      display: grid;
+      grid-template-columns: repeat(3, auto) minmax(140px, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .transport-btn {
+      min-height: 34px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9px;
+      color: #fff;
+      background: rgba(255,255,255,0.045);
+      font-size: 10px;
+      font-weight: 850;
+      cursor: pointer;
+      transition: transform 180ms var(--ease-spring), border-color 180ms ease, background 180ms ease;
+    }
+
+    .transport-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(0,210,255,0.38);
+      background: rgba(0,210,255,0.08);
+    }
+
+    .transport-btn.primary {
+      border-color: rgba(0,210,255,0.38);
+      background: rgba(0,210,255,0.12);
+      color: var(--blue);
+    }
+
+    .transport-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .speed-control {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .speed-control select {
+      min-height: 34px;
+      padding: 6px 28px 6px 9px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9px;
+      color: #fff;
+      background: #101626;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
     .flow-progress {
       position: relative;
       height: 4px;
@@ -707,7 +997,7 @@
     .engine-node {
       position: relative;
       display: grid;
-      grid-template-columns: 34px 1fr auto;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
       gap: 12px;
       align-items: center;
       padding: 12px;
@@ -747,12 +1037,21 @@
     .engine-node.processing {
       z-index: 2;
       opacity: 1;
+      scroll-margin-block: 180px;
       border-color: var(--blue);
       background: rgba(0, 210, 255, 0.1);
       box-shadow:
         0 0 0 1px rgba(0, 210, 255, 0.2),
         0 0 34px rgba(0, 210, 255, 0.28);
       transform: translateX(8px) scale(1.012);
+    }
+
+    .engine-node.processing .node-copy strong {
+      color: #ffffff;
+    }
+
+    .engine-node.processing .node-copy span {
+      color: #d9edf6;
     }
 
     .engine-node.processing::after {
@@ -804,6 +1103,11 @@
     .engine-node.active .icon {
       color: var(--blue);
       background: rgba(0,210,255,0.12);
+    }
+
+    .node-copy {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .node-copy strong {
@@ -958,6 +1262,11 @@
       to { opacity: 1; transform: translateY(0); filter: blur(0); }
     }
 
+    @keyframes caseResolve {
+      from { opacity: 0.28; transform: translateY(7px); filter: blur(3px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
     .mission-title {
       animation: titleResolve 620ms var(--ease-out) both;
     }
@@ -1029,6 +1338,23 @@
         gap: 6px 10px;
       }
 
+      .case-head {
+        display: grid;
+      }
+
+      .case-step {
+        justify-self: start;
+      }
+
+      .case-transform {
+        grid-template-columns: 1fr;
+      }
+
+      .case-arrow {
+        min-height: 22px;
+        transform: rotate(90deg);
+      }
+
       .score-track {
         grid-column: 1 / -1;
         grid-row: 2;
@@ -1059,6 +1385,19 @@
       .flow-progress {
         grid-column: 1 / -1;
         grid-row: 2;
+      }
+
+      .learning-guide {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-controls {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .speed-control {
+        grid-column: 1 / -1;
+        justify-content: space-between;
       }
 
       .architecture {
@@ -1115,10 +1454,37 @@
           <button class="scenario-btn" data-scenario="fallback" type="button">Fallback</button>
         </div>
         <div class="flow-monitor" aria-live="polite">
-          <strong id="flowState">Ready to replay</strong>
+          <strong id="flowState">Guided tour ready</strong>
           <div class="flow-progress"><div class="flow-progress-fill" id="flowProgress"></div></div>
           <span id="flowCounter">0 / 0</span>
-          <button class="monitor-replay" id="flowReplayBtn" type="button">Run flow</button>
+          <button class="monitor-replay" id="flowReplayBtn" type="button">Restart</button>
+        </div>
+        <div class="learning-guide" id="learningGuide" aria-live="polite">
+          <div class="guide-copy">
+            <div class="guide-meta">
+              <span id="guideStep">Step 1</span>
+              <span id="guidePhase">Input</span>
+            </div>
+            <h3 id="guideTitle">Alert Input</h3>
+            <p id="guideBody">The guided tour begins with the operational facts supplied by a user or monitoring system.</p>
+          </div>
+          <div class="memory-hook">
+            <span>Remember</span>
+            <strong id="guideMemory">Start from observed facts before asking AI to interpret them.</strong>
+          </div>
+        </div>
+        <div class="flow-controls" aria-label="Guided flow controls">
+          <button class="transport-btn" id="flowPrevBtn" type="button" title="Previous learning step">&larr; Previous</button>
+          <button class="transport-btn primary" id="flowPlayBtn" type="button" title="Play or pause the guided tour">Play tour</button>
+          <button class="transport-btn" id="flowNextBtn" type="button" title="Next learning step">Next &rarr;</button>
+          <label class="speed-control" for="flowSpeed">
+            Tour pace
+            <select id="flowSpeed">
+              <option value="5000" selected>Study - 5.0s</option>
+              <option value="3000">Review - 3.0s</option>
+              <option value="1500">Scan - 1.5s</option>
+            </select>
+          </label>
         </div>
         <div class="flow-stack" id="architectureStack"></div>
       </aside>
@@ -1234,15 +1600,16 @@
       {
         n: 5,
         phase: "Production RAG",
-        title: "BM25, Hybrid RRF, and Evidence Acceptance",
+        title: "Hybrid Retrieval, Adversarial Gates, and Safe Abstention",
         status: "Complete",
-        concept: "Week 5 combines semantic and exact-token retrieval, then proves that ranking is not enough. BM25 and vector candidates are fused by reciprocal rank, negative evals reveal unsafe nearest-neighbor answers, and a deterministic post-RRF gate returns accept, clarify, or no_coverage before the LLM can act.",
+        concept: "Week 5 combines semantic and exact-token retrieval, then hardens the complete decision path. One shared, negation-aware entry gate protects both retrievers; RRF fuses their ranks; and an order-independent acceptance gate returns accept, clarify, or no_coverage. Healthy or fully negated inputs stop earlier as no_incident.",
         built: [
           "bm25_retriever.py - lexical exact-token baseline",
           "hybrid_retriever.py - vector + BM25 reciprocal rank fusion",
           "iam-accessdenied.md - missing incident-family coverage",
           "evaluate_hybrid_rrf.py - positive and negative evaluation",
           "evidence_acceptance.py - post-RRF safety decisions",
+          "evaluate_adversarial_acceptance.py - negation, conflict, and unsupported-family checks",
           "basic_chain.py - Python-owned grounded response contract"
         ],
         metrics: [
@@ -1251,10 +1618,12 @@
           "Hybrid positive Top-1: 8/8",
           "Raw Hybrid negative reject: 0/4",
           "Gate decisions: 12/12",
-          "Accepted sources: 8/8"
+          "Accepted sources: 8/8",
+          "Adversarial entry gate: 6/6",
+          "Adversarial acceptance: 4/4"
         ],
-        talking: "I added BM25 for exact operational tokens and fused it with semantic retrieval using RRF because their raw scores are not comparable. Negative cases exposed that retriever agreement is not correctness. A deterministic acceptance gate now controls whether validated evidence reaches Gemma, whether the user is asked to clarify, or whether the system reports missing coverage.",
-        nodes: ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "reranker", "rrf-fusion", "acceptance-gate", "runbook-context", "chat-model", "python-contract", "json-output"]
+        talking: "I added BM25 for exact operational tokens and fused it with semantic retrieval using RRF because raw scores are not comparable. Then I tested adversarial inputs. Both retrievers now share one polarity-aware entry gate, expansion cannot turn a negated signal into a positive incident, and conflicting sources produce the same clarification regardless of rank order. Python decides whether the result is no_incident, accept, clarify, or no_coverage before Gemma can analyze it.",
+        nodes: ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "incident-output", "embedding", "vector-search", "bm25-search", "min-score", "reranker", "rrf-fusion", "acceptance-gate", "clarification-output", "coverage-output", "runbook-context", "chat-model", "python-contract", "json-output"]
       },
       {n:6, phase:"Agent Core", title:"LangGraph and Human Approval", status:"Planned", concept:"Represent incident analysis as a stateful workflow with human approval before risky actions.", built:["state graph", "approval gate"], metrics:["Risky actions blocked"], talking:"Human-in-the-loop checkpoints protect production systems.", nodes:["langgraph", "human-gate"]},
       {n:7, phase:"Agent Core", title:"Agent Specialization", status:"Planned", concept:"Split responsibilities only if evals prove specialization helps.", built:["triage/retrieval/remediation separation"], metrics:["Quality vs latency tradeoff"], talking:"Multi-agent design must be justified by measurable value.", nodes:["multi-agent"]},
@@ -1267,9 +1636,9 @@
 
     const architectureNodes = [
       {id:"alert-input", phase:"Input", label:"Alert Input", sub:"Raw operational signal", week:1, icon:"IN"},
-      {id:"query-rewriter", phase:"Query Understanding", label:"Query Expansion", sub:"Known shorthand becomes operational language", week:3, icon:"QE"},
+      {id:"query-rewriter", phase:"Query Understanding", label:"Polarity-Aware Expansion", sub:"Known shorthand expands only when its trigger is asserted", week:3, icon:"QE"},
       {id:"signal-normalizer", phase:"Query Understanding", label:"Signal Normalizer", sub:"Equivalent failure phrases become canonical terms", week:3, icon:"SN"},
-      {id:"signal-gate", phase:"Retrieval Guardrails", label:"Operational Signal Gate", sub:"Blocks non-incidents like lambda ok", week:2, icon:"SG"},
+      {id:"signal-gate", phase:"Retrieval Guardrails", label:"Shared Incident Gate", sub:"One decision protects vector and BM25 retrieval", week:2, icon:"SG"},
       {id:"metadata-filter", phase:"Retrieval Guardrails", label:"Metadata Filter", sub:"Narrows candidates by platform/category", week:3, icon:"MF"},
       {id:"metadata-fallback", phase:"Retrieval Guardrails", label:"Observable Fallback", sub:"Retries all chunks when filtered evidence fails", week:3, icon:"FB"},
       {id:"embedding", phase:"Retrieval", label:"Embedding Model", sub:"Text becomes vector", week:2, icon:"EM"},
@@ -1281,7 +1650,8 @@
       {id:"final-top3", phase:"Advanced RAG", label:"Ranked Candidates", sub:"Top evidence candidates, not yet trusted", week:3, icon:"T3"},
       {id:"failure-diagnosis", phase:"Evidence Validation", label:"Failure-Stage Diagnosis", sub:"Gate, coverage, retrieval, ranking, or LLM", week:4, icon:"DX"},
       {id:"knowledge-coverage", phase:"Evidence Validation", label:"Knowledge Coverage", sub:"Missing incident family requires a runbook", week:4, icon:"KC"},
-      {id:"acceptance-gate", phase:"Evidence Validation", label:"Evidence Acceptance Gate", sub:"Accept, clarify, or no coverage", week:5, icon:"AG"},
+      {id:"acceptance-gate", phase:"Evidence Validation", label:"Order-Independent Acceptance", sub:"Validate every distinct matching incident source", week:5, icon:"AG"},
+      {id:"incident-output", phase:"Decision Branch", label:"No Incident", sub:"Healthy or fully negated input; skip retrieval and LLM", week:5, icon:"NI"},
       {id:"clarification-output", phase:"Decision Branch", label:"Clarification Required", sub:"Ask for missing incident detail; skip LLM", week:5, icon:"?"},
       {id:"coverage-output", phase:"Decision Branch", label:"No Coverage", sub:"Escalate safely; skip LLM", week:5, icon:"NC"},
       {id:"runbook-context", phase:"Context", label:"Runbook Evidence", sub:"Grounded chunks enter prompt", week:2, icon:"RB"},
@@ -1312,8 +1682,368 @@
     const diagnosisFlow = ["alert-input", "signal-gate", "embedding", "vector-search", "min-score", "reranker", "final-top3", "failure-diagnosis", "knowledge-coverage", "retrieval-eval"];
     const coverageFixFlow = ["alert-input", "signal-gate", "embedding", "vector-search", "min-score", "final-top3", "failure-diagnosis", "knowledge-coverage", "retrieval-eval"];
     const hybridAcceptFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "reranker", "rrf-fusion", "final-top3", "acceptance-gate", "runbook-context", "chat-model", "python-contract", "json-output"];
+    const hybridNoIncidentFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "incident-output", "python-contract"];
     const hybridClarifyFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "clarification-output", "python-contract"];
+    const hybridConflictFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "clarification-output", "python-contract"];
     const hybridNoCoverageFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "coverage-output", "python-contract"];
+
+    const nodeLessons = {
+      "alert-input": {
+        body: "A monitoring system or engineer supplies the observed alert facts. This is evidence, not yet a diagnosis.",
+        memory: "Begin with what was observed before asking AI what it means."
+      },
+      "query-rewriter": {
+        body: "Controlled expansion adds known operational wording only when the trigger is asserted. A phrase such as not memory killed cannot inject positive OOM language.",
+        memory: "Check polarity before expansion; clarification must never reverse meaning."
+      },
+      "signal-normalizer": {
+        body: "Equivalent forms such as timed out and timing out are converted into one canonical signal: timeout.",
+        memory: "Normalization changes form, not meaning."
+      },
+      "signal-gate": {
+        body: "The same entry decision protects vector and BM25 retrieval. Healthy and fully negated inputs stop before either retriever spends compute.",
+        memory: "One shared gate prevents retrievers from disagreeing about whether retrieval should run."
+      },
+      "incident-output": {
+        body: "No asserted operational problem remains after normalization and polarity checks, so Python returns no_incident without retrieval or generation.",
+        memory: "No incident is different from no coverage: the first stops before retrieval."
+      },
+      "metadata-filter": {
+        body: "Platform and category metadata narrow the candidate pool so retrieval searches the most relevant runbook area.",
+        memory: "Metadata changes where we search; expansion changes what we search for."
+      },
+      "metadata-fallback": {
+        body: "If a strict metadata filter produces no valid evidence, the system visibly retries the complete index.",
+        memory: "Fallback recovers recall, but it must remain observable."
+      },
+      "embedding": {
+        body: "The normalized query becomes a numeric vector that represents semantic meaning in the embedding space.",
+        memory: "Embeddings encode meaning for retrieval; they do not generate the answer."
+      },
+      "vector-search": {
+        body: "Cosine similarity compares the query vector with stored runbook chunk vectors and ranks semantic neighbors.",
+        memory: "Closest in meaning is a candidate, not proof of correctness."
+      },
+      "bm25-search": {
+        body: "BM25 independently ranks chunks using exact tokens such as 504, OOMKilled, AccessDenied, and service identifiers.",
+        memory: "BM25 is the exact-word specialist; vector search is the meaning specialist."
+      },
+      "min-score": {
+        body: "Weak vector candidates below 0.60 are removed before they can enter the evidence set.",
+        memory: "Tune thresholds from evaluation evidence, never from one convenient query."
+      },
+      "reranker": {
+        body: "Section intent promotes the valid chunk that best answers cause, symptom, or immediate-action questions.",
+        memory: "Reranking repairs order; it cannot create missing knowledge."
+      },
+      "rrf-fusion": {
+        body: "Reciprocal Rank Fusion combines vector and BM25 positions without adding their incomparable raw scores.",
+        memory: "RRF combines ranks, not confidence."
+      },
+      "final-top3": {
+        body: "The strongest ranked candidates form a shortlist. They still need validation before becoming LLM context.",
+        memory: "Best available does not automatically mean relevant enough."
+      },
+      "failure-diagnosis": {
+        body: "The system identifies whether a miss belongs to gating, coverage, retrieval, ranking, or LLM reasoning.",
+        memory: "Fix the stage that failed, not the stage that is easiest to tune."
+      },
+      "knowledge-coverage": {
+        body: "The candidate incident family is compared with what the runbook collection actually supports.",
+        memory: "A missing incident family needs a runbook, not a lower threshold."
+      },
+      "acceptance-gate": {
+        body: "After RRF, deterministic rules validate every distinct matching incident source. Multiple valid sources trigger clarification regardless of which candidate ranked first.",
+        memory: "Safety decisions must not change when candidate order changes."
+      },
+      "clarification-output": {
+        body: "The family is known but the exact problem is unclear, so the system asks one focused question and skips Gemma.",
+        memory: "When evidence is incomplete, ask before diagnosing."
+      },
+      "coverage-output": {
+        body: "No supported runbook aligns with the incident family, so the system exposes the gap and requires escalation.",
+        memory: "No coverage means no speculative RCA or remediation."
+      },
+      "runbook-context": {
+        body: "Only evidence approved by the acceptance gate is formatted and inserted into the model context window.",
+        memory: "RAG controls what the model gets to reason from."
+      },
+      "chat-model": {
+        body: "Local Gemma analyzes the alert and validated evidence to produce the nested root-cause analysis.",
+        memory: "The LLM explains trusted evidence; it does not decide whether evidence is trusted."
+      },
+      "severity-policy": {
+        body: "A consistent operational policy maps observed impact and failure conditions to P1, P2, or P3.",
+        memory: "Severity should follow policy, not the model's mood."
+      },
+      "python-contract": {
+        body: "Python owns status, grounding, source, clarification, and escalation so probabilistic text cannot override safety.",
+        memory: "Code controls permission; the model controls language."
+      },
+      "json-parser": {
+        body: "The model response is parsed and validated before application code uses any generated fields.",
+        memory: "Never trust model text until code validates its structure."
+      },
+      "json-output": {
+        body: "The final machine-readable result contains the grounded analysis or a safe non-analysis state.",
+        memory: "Uncertainty belongs in the response contract, not hidden in prose."
+      },
+      "retrieval-eval": {
+        body: "Positive, negative, failure-stage, and regression cases measure both retrieval ability and safe rejection.",
+        memory: "A perfect positive score can still hide dangerous false positives."
+      }
+    };
+
+    const routeExamples = {
+      "1:incident": {
+        query: "CPU usage on prod-api-server-01 exceeded 95% for 10 minutes",
+        expanded: "Production API server CPU saturation above 95% for 10 consecutive minutes",
+        normalized: "api server cpu saturation 95 percent 10 minutes",
+        gate: "PASS - CPU, server, and sustained utilization are operational signals",
+        analysis: "Probable resource saturation from traffic growth or a runaway process",
+        severity: "P1 - sustained saturation on a production API service",
+        contract: "status=generated, grounding=none (Week 1 baseline)",
+        json: "{ severity: 'P1', root_cause: 'resource saturation', action: 'scale and inspect' }",
+        evaluation: "3/3 synthetic P1 alerts matched the expected label"
+      },
+      "2:incident": {
+        query: "SSL certificate expires in 7 days",
+        expanded: "TLS SSL certificate expiration within 7 days",
+        normalized: "ssl certificate expiry 7 days",
+        gate: "PASS - certificate expiry is an actionable operational condition",
+        metadata: "Search certificate / expiry runbook chunks",
+        embedding: "[0.12, -0.08, 0.44, ... 768 dimensions]",
+        vector: "SSL Certificate Expiry / Overview - similarity 0.7529",
+        threshold: "KEEP 0.7529 because it is >= 0.60",
+        ranked: "1. SSL Expiry Overview; weaker neighbors removed",
+        evidence: "Renew before expiry; validate the chain and deployment target",
+        analysis: "Certificate renewal is required before the seven-day window closes",
+        severity: "P2 - service is currently healthy but failure risk is approaching",
+        json: "{ severity: 'P2', source: 'ssl-certificate-expiry.md', grounded: true }",
+        evaluation: "Expected SSL runbook appears at Top-1"
+      },
+      "2:negative": {
+        query: "lambda ok",
+        expanded: "lambda ok",
+        normalized: "lambda ok",
+        gate: "REJECT - a service name plus 'ok' is not an incident",
+        decision: "NO RETRIEVAL",
+        contract: "status=no_incident; the model is skipped",
+        json: "{ status: 'no_incident', grounded: false }",
+        evaluation: "Negative no-match test passes only when zero evidence is returned"
+      },
+      "3:vector": {
+        query: "How do I fix Lambda timeout?",
+        expanded: "AWS Lambda function timeout remediation actions",
+        normalized: "lambda timeout remediation action",
+        gate: "PASS - Lambda timeout is a known incident family",
+        metadata: "Narrow to platform=aws-lambda, category=timeout",
+        embedding: "Query meaning encoded as a 768-dimensional vector",
+        vector: "Overview 0.8052; Immediate Actions 0.7074",
+        threshold: "Both chunks pass the original 0.60 similarity gate",
+        reranked: "Vector-only leaves Overview at rank 1",
+        ranked: "1. Overview; 2. Immediate Actions",
+        evidence: "General Lambda timeout explanation, not the requested action section",
+        analysis: "Relevant runbook found, but section intent is imperfect",
+        severity: "Policy evaluates operational impact independently",
+        json: "{ grounded: true, section: 'Overview' }",
+        evaluation: "Vector-only action-intent Top-1: FAIL"
+      },
+      "3:reranked": {
+        query: "How do I fix Lambda timeout?",
+        expanded: "AWS Lambda function timeout remediation actions",
+        normalized: "lambda timeout remediation action",
+        gate: "PASS - Lambda timeout is a known incident family",
+        metadata: "Narrow to platform=aws-lambda, category=timeout",
+        embedding: "Query meaning encoded as a 768-dimensional vector",
+        vector: "Overview 0.8052; Immediate Actions 0.7074",
+        threshold: "Both chunks pass the original 0.60 similarity gate",
+        reranked: "Immediate Actions 0.7074 + action bonus 0.10 = 0.8074",
+        ranked: "1. Immediate Actions 0.8074; 2. Overview 0.8052",
+        evidence: "Check dependency latency, duration, retries, and recent deployment changes",
+        analysis: "The action section now answers what the engineer actually asked",
+        severity: "Policy evaluates impact; reranking does not set severity",
+        json: "{ grounded: true, section: 'Immediate Actions' }",
+        evaluation: "Reranked intent suite improves Top-1 from 1/3 to 3/3"
+      },
+      "3:fallback": {
+        query: "pod OOMKilled but platform metadata says lambda",
+        expanded: "Kubernetes pod terminated because container exceeded memory limit",
+        normalized: "kubernetes pod oomkilled memory limit",
+        gate: "PASS - OOMKilled is a strong operational signal",
+        metadata: "Filtered Lambda pool returns zero evidence above 0.60",
+        fallback: "Retry all 30 chunks and record that metadata recovery occurred",
+        embedding: "Expanded query becomes a semantic vector",
+        vector: "Kubernetes OOMKilled / Symptoms - similarity 0.79",
+        threshold: "KEEP 0.79 because it is >= 0.60",
+        reranked: "Symptoms remains first because the query describes symptoms",
+        ranked: "1. Kubernetes OOMKilled / Symptoms",
+        evidence: "CrashLoopBackOff, OOMKilled reason, and rising restart count",
+        analysis: "Evidence contradicts the supplied platform metadata",
+        severity: "Policy considers service impact after recovery",
+        json: "{ grounded: true, metadata_fallback: true }",
+        evaluation: "Fallback is observable so bad metadata cannot fail silently"
+      },
+      "4:diagnosis": {
+        query: "checkout HTTP 504",
+        normalized: "checkout http 504 gateway timeout",
+        gate: "PASS - HTTP 504 is a precise operational error",
+        embedding: "The 504 query is embedded correctly",
+        vector: "Nearest available neighbor: ALB 502 runbook",
+        threshold: "A related neighbor can score well and still be wrong",
+        reranked: "Reranking cannot turn 502 knowledge into 504 knowledge",
+        ranked: "Top candidate is related, but incident code does not align",
+        diagnosis: "KNOWLEDGE COVERAGE FAILURE",
+        coverage: "No dedicated HTTP 504 runbook exists in this evaluation state",
+        evaluation: "Correct fix: add coverage, rebuild the index, then regress"
+      },
+      "4:coverage-fix": {
+        query: "checkout HTTP 504 gateway timeout",
+        normalized: "checkout http 504 gateway timeout",
+        gate: "PASS - HTTP 504 is a precise operational error",
+        embedding: "The query is compared with the rebuilt runbook index",
+        vector: "HTTP 504 Gateway Timeout / Overview - similarity 0.8986",
+        threshold: "KEEP 0.8986 because it is >= 0.60",
+        ranked: "1. 504 Overview; 2. 504 Symptoms; 3. 504 Safety Notes",
+        diagnosis: "RETRIEVAL HEALTHY",
+        coverage: "Dedicated http-504-gateway-timeout.md now exists",
+        evaluation: "Coverage repair passes without borrowing 502 evidence"
+      },
+      "5:accept": {
+        query: "Lambda payment-processor timed out after 15 seconds",
+        expanded: "AWS Lambda payment processor function timeout after 15 seconds",
+        normalized: "lambda payment processor timeout 15 seconds",
+        gate: "PASS - Lambda plus timeout describes a supported incident",
+        embedding: "Semantic vector captures function timeout meaning",
+        vector: "Lambda Timeout / Symptoms - vector rank 1",
+        lexical: "Lambda Timeout / Overview - BM25 rank 1 for exact tokens",
+        threshold: "Strong Lambda timeout candidates survive >= 0.60",
+        reranked: "Action intent can promote Immediate Actions within the runbook",
+        fusion: "Both retrievers rank Lambda evidence highly; RRF combines ranks, not scores",
+        ranked: "Top candidates all belong to Lambda timeout evidence",
+        decision: "ACCEPT - incident family and timeout category align",
+        evidence: "Inspect dependency latency, configured timeout, retries, and recent changes",
+        analysis: "Likely downstream latency or work duration exceeding the 15-second limit",
+        contract: "status=analyzed; grounded=true; accepted_source=lambda-timeout.md",
+        json: "{ status: 'analyzed', severity: 'P1', grounded: true }",
+        evaluation: "Hybrid positive Top-1 8/8; accepted sources 8/8"
+      },
+      "5:no-incident": {
+        query: "Database connections are healthy and not exhausted",
+        expanded: "Database connections are healthy and not exhausted",
+        normalized: "database connections are healthy and not exhausted",
+        gate: "REJECT - exhausted is negated and no asserted failure remains",
+        decision: "NO INCIDENT - stop before vector search and BM25",
+        contract: "status=no_incident; grounded=false; retrieval and LLM skipped",
+        json: "{ status: 'no_incident', grounding: 'none', escalation_required: false }",
+        evaluation: "Shared hybrid entry gate: 6/6 adversarial cases"
+      },
+      "5:clarify": {
+        query: "certificate error",
+        expanded: "certificate TLS error",
+        normalized: "certificate error",
+        gate: "PASS - certificate errors can be operational incidents",
+        embedding: "Semantic vector identifies the certificate family",
+        vector: "SSL Expiry / Overview is the nearest semantic neighbor",
+        lexical: "BM25 finds certificate tokens but cannot infer the failure type",
+        threshold: "Related certificate evidence survives retrieval",
+        fusion: "RRF confirms retrieval agreement, not category correctness",
+        ranked: "SSL expiry ranks first, but the query never said expiry",
+        decision: "CLARIFY - known family, missing failure category",
+        contract: "status=clarification_required; LLM skipped",
+        json: "Ask: expired, untrusted, hostname mismatch, or TLS handshake failure?",
+        evaluation: "Safe behavior is a question, not an invented RCA"
+      },
+      "5:conflict": {
+        query: "Lambda timed out and logs show AccessDenied",
+        expanded: "AWS Lambda function timeout and IAM AccessDenied permission failure",
+        normalized: "lambda timeout and logs show accessdenied",
+        gate: "PASS - two asserted operational failure signals remain",
+        embedding: "Vector retrieval finds Lambda timeout and IAM evidence",
+        vector: "Lambda Timeout and IAM AccessDenied are valid candidates",
+        lexical: "BM25 also finds exact timeout and AccessDenied tokens",
+        threshold: "Both supported incident categories survive retrieval",
+        fusion: "RRF may place either source first",
+        ranked: "Two distinct matching sources: lambda-timeout.md + iam-accessdenied.md",
+        decision: "CLARIFY - multiple supported incident categories align",
+        contract: "status=clarification_required; LLM skipped",
+        json: "Ask which error occurred first and whether both belong to one failure",
+        evaluation: "Original and reversed candidate orders both return clarify"
+      },
+      "5:no-coverage": {
+        query: "Kafka consumer lag rising after deployment",
+        expanded: "Kafka consumer lag increasing after deployment",
+        normalized: "kafka consumer lag increase deployment",
+        gate: "PASS - rising consumer lag is an operational symptom",
+        embedding: "Semantic search finds only distant operational neighbors",
+        vector: "No vector candidate passes the acceptance evidence check",
+        lexical: "IAM Symptoms ranks via shared word 'deployment'",
+        threshold: "A lexical candidate can exist without incident-family alignment",
+        fusion: "RRF ranks IAM first because it cannot know the Kafka runbook is absent",
+        ranked: "Top candidate: IAM AccessDenied / Symptoms - wrong incident family",
+        decision: "NO COVERAGE - Kafka does not align with IAM or Kubernetes",
+        contract: "status=no_coverage; grounded=false; LLM skipped",
+        json: "Escalate and add a Kafka consumer-lag runbook before analysis",
+        evaluation: "Negative evaluation succeeds only when this false positive is rejected"
+      }
+    };
+
+    function activeRouteExample() {
+      return routeExamples[`${activeWeek}:${scenario}`]
+        || routeExamples[`${activeWeek}:incident`]
+        || routeExamples["5:accept"];
+    }
+
+    function exampleForStage(nodeId) {
+      const item = activeRouteExample();
+      const stages = {
+        "alert-input": ["Observed alert", item.query, "Captured as", "Raw evidence; no diagnosis yet", "The system starts from observable facts, not assumptions."],
+        "query-rewriter": ["Raw wording", item.query, "Controlled expansion", item.expanded || item.normalized || item.query, "Expansion adds known operational language without inventing a cause."],
+        "signal-normalizer": ["Phrase variants", item.expanded || item.query, "Canonical signal", item.normalized || item.expanded || item.query, "Canonical wording makes equivalent failure phrases behave consistently."],
+        "signal-gate": ["Candidate query", item.normalized || item.query, "Gate decision", item.gate || "PASS - operational evidence detected", "The cheapest safe decision happens before retrieval consumes compute."],
+        "incident-output": ["Gate result", item.gate || item.query, "Deterministic response", item.contract || "status=no_incident; skip retrieval and generation", "A healthy or fully negated observation should not become an AI diagnosis."],
+        "metadata-filter": ["Available metadata", "platform and category hints", "Candidate scope", item.metadata || "Search only the most plausible runbook family", "Metadata improves efficiency, but it is a hint rather than unquestionable truth."],
+        "metadata-fallback": ["Filtered result", item.metadata || "No strong evidence in the filtered pool", "Observable recovery", item.fallback || "Retry the full index and record the fallback", "Fallback protects recall while making the metadata contradiction visible."],
+        "embedding": ["Text query", item.normalized || item.query, "Query vector", item.embedding || "[semantic dimensions ...]", "The vector represents meaning numerically so semantic distance can be measured."],
+        "vector-search": ["Query vector vs chunk vectors", item.embedding || item.normalized || item.query, "Semantic candidate", item.vector || "Nearest runbook chunk by cosine similarity", "Vector search is good at meaning, but nearest does not automatically mean correct."],
+        "bm25-search": ["Exact query tokens", item.normalized || item.query, "Lexical candidate", item.lexical || "Exact identifiers and error terms ranked by BM25", "BM25 contributes precision when exact codes, names, or identifiers matter."],
+        "min-score": ["Raw similarity", item.vector || "Candidate similarity", "Quality gate", item.threshold || "Keep only candidates with original similarity >= 0.60", "Thresholding removes weak semantic neighbors before bonuses can distort them."],
+        "reranker": ["Valid candidates", item.vector || item.ranked || "Top-K semantic results", "Intent-aware order", item.reranked || item.ranked || "Relevant section promoted within the same runbook", "Reranking changes order; it cannot manufacture missing knowledge."],
+        "rrf-fusion": ["Vector ranks + BM25 ranks", `${item.vector || "vector list"} | ${item.lexical || "BM25 list"}`, "Fused ranking", item.fusion || "RRF score = sum of reciprocal ranks", "RRF compares rank positions because raw retriever scores use incompatible scales."],
+        "final-top3": ["Surviving candidates", item.reranked || item.fusion || item.vector || "Ranked evidence", "Top evidence set", item.ranked || "Best three evidence chunks", "Top-K preserves useful context, but the next gate must still verify alignment."],
+        "failure-diagnosis": ["Observed miss", item.ranked || item.vector || "Wrong or missing evidence", "Failure owner", item.diagnosis || "Identify gate, coverage, retrieval, ranking, or LLM failure", "Fixing the correct layer prevents random threshold and prompt changes."],
+        "knowledge-coverage": ["Requested incident", item.query, "Coverage result", item.coverage || "Check whether a dedicated runbook exists", "A retriever cannot return knowledge that was never indexed."],
+        "acceptance-gate": ["Top-ranked evidence", item.ranked || item.fusion || "RRF candidates", "Safety decision", item.decision || "ACCEPT only when incident family and category align", "Ranking answers what is closest; acceptance answers whether it is safe to use."],
+        "clarification-output": ["Ambiguous incident", item.query, "Deterministic response", item.json || "Ask for the missing failure detail", "Clarification keeps the model from converting ambiguity into a confident diagnosis."],
+        "coverage-output": ["Unsupported incident", item.query, "Deterministic response", item.json || "Report no coverage and escalate", "No coverage is an honest system outcome, not an application failure."],
+        "runbook-context": ["Accepted source", item.decision || item.ranked || "Validated Top-K evidence", "LLM context", item.evidence || "Only grounded runbook excerpts", "The context window receives concise evidence instead of the entire knowledge base."],
+        "chat-model": ["Alert + accepted context", `${item.query} | ${item.evidence || "validated evidence"}`, "Model analysis", item.analysis || "Structured root-cause reasoning from supplied evidence", "The LLM explains accepted evidence; it does not decide whether that evidence was safe."],
+        "severity-policy": ["Observed impact", item.analysis || item.query, "Policy result", item.severity || "P1, P2, or P3 from deterministic rules", "Operational policy makes severity repeatable across model runs."],
+        "python-contract": ["Pipeline decision", item.decision || item.analysis || item.query, "Application-owned state", item.contract || "status and grounding controlled by Python", "Code owns permission and safety state; generated prose cannot override it."],
+        "json-parser": ["Model text", item.analysis || "Generated structured response", "Validated fields", "Required keys parsed; invalid shapes rejected", "Parsing is a trust boundary between probabilistic output and application logic."],
+        "json-output": ["Validated analysis", item.contract || item.analysis || "Safe pipeline result", "Final JSON", item.json || "{ status, severity, root_cause, action, grounding }", "Structured output is inspectable, testable, and usable by downstream tools."],
+        "retrieval-eval": ["Expected behavior", item.coverage || item.decision || item.query, "Measured result", item.evaluation || "Compare Top-1, Top-K, and negative rejection", "Evaluation converts architecture opinions into evidence-backed engineering decisions."]
+      };
+
+      const values = stages[nodeId] || ["Stage input", item.query, "Stage output", "Inspectable pipeline state", "One stage should make one understandable decision."];
+      const warningStages = new Set(["metadata-fallback", "failure-diagnosis", "clarification-output"]);
+      const blockedStages = new Set(["incident-output", "coverage-output"]);
+      const successStages = new Set(["acceptance-gate", "runbook-context", "json-output", "retrieval-eval"]);
+      return {
+        inputLabel: values[0],
+        input: values[1],
+        outputLabel: values[2],
+        output: values[3],
+        insight: values[4],
+        tone: blockedStages.has(nodeId)
+          ? "blocked"
+          : warningStages.has(nodeId)
+            ? "warning"
+            : successStages.has(nodeId)
+              ? "success"
+              : "neutral"
+      };
+    }
 
     const weekGrid = document.getElementById("weekGrid");
     const missionPanel = document.getElementById("missionPanel");
@@ -1331,7 +2061,20 @@
     const flowProgress = document.getElementById("flowProgress");
     const flowCounter = document.getElementById("flowCounter");
     const flowReplayBtn = document.getElementById("flowReplayBtn");
-    let animationTimers = [];
+    const flowPrevBtn = document.getElementById("flowPrevBtn");
+    const flowPlayBtn = document.getElementById("flowPlayBtn");
+    const flowNextBtn = document.getElementById("flowNextBtn");
+    const flowSpeed = document.getElementById("flowSpeed");
+    const guideStep = document.getElementById("guideStep");
+    const guidePhase = document.getElementById("guidePhase");
+    const guideTitle = document.getElementById("guideTitle");
+    const guideBody = document.getElementById("guideBody");
+    const guideMemory = document.getElementById("guideMemory");
+    let flowNodes = [];
+    let currentFlowIndex = 0;
+    let flowPlaying = false;
+    let flowTimer = null;
+    let followFlow = false;
     let activeViewTransition = null;
 
     let activeWeek = 5;
@@ -1412,11 +2155,27 @@
     function renderWeek5Lab() {
       const decisions = `
         <div class="decision-grid">
+          <div class="decision-card ${scenario === "no-incident" ? "active incident" : ""}"><strong>No Incident</strong><span>Healthy or negated input stops before retrieval.</span></div>
           <div class="decision-card ${scenario === "accept" ? "active accept" : ""}"><strong>Accept</strong><span>Validated runbook evidence enters Gemma.</span></div>
-          <div class="decision-card ${scenario === "clarify" ? "active clarify" : ""}"><strong>Clarify</strong><span>Known family, missing problem detail. Skip LLM.</span></div>
+          <div class="decision-card ${["clarify", "conflict"].includes(scenario) ? "active clarify" : ""}"><strong>Clarify</strong><span>Ambiguous or conflicting incident detail. Skip LLM.</span></div>
           <div class="decision-card ${scenario === "no-coverage" ? "active coverage" : ""}"><strong>No Coverage</strong><span>Unsupported incident family. Escalate safely.</span></div>
         </div>
       `;
+
+      if (scenario === "no-incident") {
+        return `
+          <div class="section-label"><span>Shared entry gate</span><span>healthy database</span></div>
+          <div class="infographic">
+            <div class="route-map">
+              <div class="route-step"><strong>Raw Query</strong><span>Database connections are healthy and not exhausted.</span></div>
+              <div class="route-step warn"><strong>Polarity Check</strong><span>The word exhausted is present, but it is negated.</span></div>
+              <div class="route-step block"><strong>Shared Gate Stops</strong><span>Neither vector search nor BM25 is allowed to run.</span></div>
+              <div class="route-step accept"><strong>Deterministic Exit</strong><span>Return no_incident; skip retrieval and Gemma.</span></div>
+            </div>
+            ${decisions}
+          </div>
+        `;
+      }
 
       if (scenario === "clarify") {
         return `
@@ -1429,6 +2188,26 @@
               <div class="route-step accept"><strong>Ask, Do Not Guess</strong><span>Expired, untrusted, hostname mismatch, or TLS failure?</span></div>
             </div>
             ${decisions}
+          </div>
+        `;
+      }
+
+      if (scenario === "conflict") {
+        return `
+          <div class="section-label"><span>Order-independent conflict check</span><span>Lambda + IAM</span></div>
+          <div class="infographic">
+            <div class="route-map">
+              <div class="route-step"><strong>Raw Query</strong><span>Lambda timed out and logs show AccessDenied.</span></div>
+              <div class="route-step warn"><strong>Two Valid Sources</strong><span>Lambda timeout and IAM AccessDenied both align.</span></div>
+              <div class="route-step warn"><strong>Collect Before Decide</strong><span>Inspect every distinct matching source, not only RRF Top-1.</span></div>
+              <div class="route-step accept"><strong>Stable Clarification</strong><span>Both candidate orders ask which failure happened first.</span></div>
+            </div>
+            ${decisions}
+            <div class="micro-stats">
+              <div class="micro-stat"><strong>2/2</strong><span>candidate orders clarified</span></div>
+              <div class="micro-stat"><strong>0</strong><span>conflicts sent to Gemma</span></div>
+              <div class="micro-stat"><strong>4/4</strong><span>adversarial acceptance</span></div>
+            </div>
           </div>
         `;
       }
@@ -1460,7 +2239,7 @@
           ${decisions}
           <div class="micro-stats">
             <div class="micro-stat"><strong>8/8</strong><span>hybrid positive Top-1</span></div>
-            <div class="micro-stat"><strong>0/4</strong><span>raw hybrid negative rejection</span></div>
+            <div class="micro-stat"><strong>6/6</strong><span>shared entry gate</span></div>
             <div class="micro-stat"><strong>12/12</strong><span>gate decisions</span></div>
           </div>
         </div>
@@ -1551,6 +2330,32 @@
         <h2 class="mission-title">${week.title}</h2>
         <div class="explain-box">${week.concept}</div>
 
+        <section class="case-study" id="caseStudy" data-tone="neutral" aria-live="polite">
+          <div class="case-head">
+            <div>
+              <span class="case-kicker">Worked example - synchronized with the tour</span>
+              <h3 id="caseTitle">Follow one incident through the system</h3>
+            </div>
+            <span class="case-step" id="caseStep">Step 1</span>
+          </div>
+          <div class="case-query" id="caseQuery">Waiting for the selected route...</div>
+          <div class="case-transform">
+            <div class="case-cell">
+              <span id="caseInputLabel">What enters</span>
+              <strong id="caseInput">Raw operational evidence</strong>
+            </div>
+            <div class="case-arrow" aria-hidden="true">&rarr;</div>
+            <div class="case-cell">
+              <span id="caseOutputLabel">What leaves</span>
+              <strong id="caseOutput">A safer input for the next stage</strong>
+            </div>
+          </div>
+          <div class="case-insight">
+            <span>Why this matters</span>
+            <strong id="caseInsight">Each stage should make one clear, inspectable decision.</strong>
+          </div>
+        </section>
+
         <div class="module-grid">
           <section class="module">
             <h3>Assets Created</h3>
@@ -1617,8 +2422,12 @@
         return [
           "BM25 is the exact-token specialist; vectors are the meaning specialist.",
           "RRF combines ranks because BM25 and vector scores use different scales.",
+          "One negation-aware entry gate protects both retrievers.",
+          "Polarity is checked before expansion so negative statements stay negative.",
           "Retriever agreement is consensus, not correctness.",
           "Positive Top-1 alone hides false-positive answers on unknown incidents.",
+          "No incident stops before retrieval; no coverage stops after retrieval.",
+          "Conflict detection inspects distinct sources and is independent of rank order.",
           "The post-RRF gate returns accept, clarify, or no_coverage.",
           "Python owns grounding and status; the LLM analyzes accepted evidence only."
         ];
@@ -1640,7 +2449,9 @@
       if (week.n === 4 && scenario === "diagnosis") selectedFlow = diagnosisFlow;
       if (week.n === 4 && scenario === "coverage-fix") selectedFlow = coverageFixFlow;
       if (week.n === 5 && scenario === "accept") selectedFlow = hybridAcceptFlow;
+      if (week.n === 5 && scenario === "no-incident") selectedFlow = hybridNoIncidentFlow;
       if (week.n === 5 && scenario === "clarify") selectedFlow = hybridClarifyFlow;
+      if (week.n === 5 && scenario === "conflict") selectedFlow = hybridConflictFlow;
       if (week.n === 5 && scenario === "no-coverage") selectedFlow = hybridNoCoverageFlow;
       const flowIds = new Set(selectedFlow);
       const visibleNodes = architectureNodes.filter(
@@ -1661,7 +2472,7 @@
         const lineLive = online || active;
 
         html += `
-          <div class="engine-node ${online ? "online" : ""} ${active ? "active" : ""} ${locked ? "locked" : ""}" data-node-id="${node.id}">
+          <div class="engine-node ${online ? "online" : ""} ${active ? "active" : ""} ${locked ? "locked" : ""}" data-node-id="${node.id}" data-phase="${node.phase}">
             <div class="icon">${node.icon}</div>
             <div class="node-copy">
               <strong>${node.label}</strong>
@@ -1677,93 +2488,245 @@
     }
 
     function completionLabel() {
+      if (activeWeek === 5 && scenario === "no-incident") return "No incident; retrieval and LLM skipped";
       if (activeWeek === 5 && scenario === "clarify") return "Clarification ready; LLM skipped";
+      if (activeWeek === 5 && scenario === "conflict") return "Conflict clarified consistently; LLM skipped";
       if (activeWeek === 5 && scenario === "no-coverage") return "Coverage gap escalated; LLM skipped";
       if (activeWeek === 4 && scenario === "coverage-fix") return "Coverage repaired and evaluated";
       if (activeWeek === 4) return "Failure stage diagnosed";
       return "Grounded response complete";
     }
 
-    function replayArchitecture({follow = false} = {}) {
-      animationTimers.forEach((timer) => clearTimeout(timer));
-      animationTimers = [];
+    function clearFlowTimer() {
+      if (flowTimer) clearTimeout(flowTimer);
+      flowTimer = null;
+    }
 
-      const activeNodes = Array.from(document.querySelectorAll(".engine-node.active"));
-      const allNodes = Array.from(document.querySelectorAll(".engine-node"));
-      const allConnectors = Array.from(document.querySelectorAll(".connector"));
+    function currentFlowNode() {
+      return flowNodes[currentFlowIndex] || null;
+    }
 
-      allNodes.forEach((node) => {
-        node.classList.remove("playing", "queued", "processing", "completed");
-      });
-      allConnectors.forEach((connector) => connector.classList.remove("transmitting"));
+    function updateCaseStudy(node, index) {
+      const panel = document.getElementById("caseStudy");
+      if (!panel) return;
 
-      activeNodes.forEach((node) => node.classList.add("queued"));
-      flowProgress.style.width = "0%";
-      flowCounter.textContent = `0 / ${activeNodes.length}`;
-      flowState.textContent = activeNodes.length ? "Flow queued" : "No active route";
-      replayBtn.disabled = true;
-      flowReplayBtn.disabled = true;
+      const title = document.getElementById("caseTitle");
+      const step = document.getElementById("caseStep");
+      const query = document.getElementById("caseQuery");
+      const inputLabel = document.getElementById("caseInputLabel");
+      const input = document.getElementById("caseInput");
+      const outputLabel = document.getElementById("caseOutputLabel");
+      const output = document.getElementById("caseOutput");
+      const insight = document.getElementById("caseInsight");
 
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduceMotion && activeNodes.length) {
-        activeNodes.forEach((node) => {
-          node.classList.remove("queued");
-          node.classList.add("completed");
-        });
-        flowProgress.style.width = "100%";
-        flowCounter.textContent = `${activeNodes.length} / ${activeNodes.length}`;
-        flowState.textContent = completionLabel();
-        replayBtn.disabled = false;
-        flowReplayBtn.disabled = false;
+      if (!node) {
+        title.textContent = "Choose a route to begin";
+        step.textContent = "No active step";
+        query.textContent = "The worked example will follow the selected scenario.";
+        inputLabel.textContent = "What enters";
+        input.textContent = "No active input";
+        outputLabel.textContent = "What leaves";
+        output.textContent = "No active output";
+        insight.textContent = "Move one stage at a time and explain the transformation in your own words.";
+        panel.dataset.tone = "neutral";
         return;
       }
 
-      activeNodes.forEach((node, index) => {
-        const timer = setTimeout(() => {
-          const previous = activeNodes[index - 1];
-          if (previous) {
-            previous.classList.remove("processing");
-            previous.classList.add("completed");
-            const previousConnector = document.querySelector(
-              `[data-connector-after="${previous.dataset.nodeId}"]`
-            );
-            if (previousConnector) {
-              previousConnector.classList.remove("transmitting");
-              void previousConnector.offsetWidth;
-              previousConnector.classList.add("transmitting");
-            }
-          }
+      const example = exampleForStage(node.dataset.nodeId);
+      const nodeTitle = node.querySelector(".node-copy strong").textContent;
+      panel.classList.remove("updating");
+      void panel.offsetWidth;
+      panel.classList.add("updating");
+      panel.dataset.tone = example.tone;
+      title.textContent = `${nodeTitle} in action`;
+      step.textContent = `Step ${index + 1} / ${flowNodes.length}`;
+      query.textContent = `Running example: ${activeRouteExample().query}`;
+      inputLabel.textContent = example.inputLabel;
+      input.textContent = example.input;
+      outputLabel.textContent = example.outputLabel;
+      output.textContent = example.output;
+      insight.textContent = example.insight;
+    }
 
-          node.classList.remove("queued", "playing");
+    function updateGuide(node, index) {
+      if (!node) {
+        guideStep.textContent = "No step";
+        guidePhase.textContent = "Unavailable";
+        guideTitle.textContent = "No active learning route";
+        guideBody.textContent = "Choose a completed week or scenario to inspect its architecture flow.";
+        guideMemory.textContent = "A useful visual should explain one decision at a time.";
+        updateCaseStudy(null, 0);
+        return;
+      }
+
+      const lesson = nodeLessons[node.dataset.nodeId] || {};
+      guideStep.textContent = `Step ${index + 1} of ${flowNodes.length}`;
+      guidePhase.textContent = node.dataset.phase || "Architecture";
+      guideTitle.textContent = node.querySelector(".node-copy strong").textContent;
+      guideBody.textContent = lesson.body || node.querySelector(".node-copy span").textContent;
+      guideMemory.textContent = lesson.memory || "Understand what enters this stage, what changes, and what leaves it.";
+      updateCaseStudy(node, index);
+    }
+
+    function updatePlayerControls() {
+      const hasFlow = flowNodes.length > 0;
+      flowPrevBtn.disabled = !hasFlow || currentFlowIndex <= 0;
+      flowNextBtn.disabled = !hasFlow || currentFlowIndex >= flowNodes.length - 1;
+      flowPlayBtn.disabled = !hasFlow;
+      flowPlayBtn.textContent = flowPlaying
+        ? "Pause tour"
+        : currentFlowIndex >= flowNodes.length - 1
+          ? "Replay tour"
+          : "Play tour";
+      flowReplayBtn.disabled = !hasFlow;
+      replayBtn.disabled = !hasFlow;
+    }
+
+    function showFlowStep(index, {follow = false} = {}) {
+      if (!flowNodes.length) {
+        updateGuide(null, 0);
+        updatePlayerControls();
+        return;
+      }
+
+      currentFlowIndex = Math.max(0, Math.min(index, flowNodes.length - 1));
+      const allConnectors = Array.from(document.querySelectorAll(".connector"));
+      allConnectors.forEach((connector) => connector.classList.remove("transmitting"));
+
+      flowNodes.forEach((node, nodeIndex) => {
+        node.classList.remove("playing", "queued", "processing", "completed");
+        if (nodeIndex < currentFlowIndex) {
+          node.classList.add("completed");
+        } else if (nodeIndex === currentFlowIndex) {
           void node.offsetWidth;
           node.classList.add("playing", "processing");
-          if (
-            follow
-            && architecturePanel.scrollHeight > architecturePanel.clientHeight + 1
-          ) {
-            architecturePanel.scrollTo({
-              top: node.offsetTop - (architecturePanel.clientHeight / 2) + (node.clientHeight / 2),
-              behavior: "smooth",
-            });
-          }
-          const progress = ((index + 1) / activeNodes.length) * 100;
-          flowProgress.style.width = `${progress}%`;
-          flowCounter.textContent = `${index + 1} / ${activeNodes.length}`;
-          flowState.textContent = node.querySelector(".node-copy strong").textContent;
-
-          if (index === activeNodes.length - 1) {
-            const finishTimer = setTimeout(() => {
-              node.classList.remove("processing");
-              node.classList.add("completed");
-              flowState.textContent = completionLabel();
-              replayBtn.disabled = false;
-              flowReplayBtn.disabled = false;
-            }, 520);
-            animationTimers.push(finishTimer);
-          }
-        }, index * 230);
-        animationTimers.push(timer);
+        } else {
+          node.classList.add("queued");
+        }
       });
+
+      const current = currentFlowNode();
+      const previous = flowNodes[currentFlowIndex - 1];
+      if (previous) {
+        const connector = document.querySelector(
+          `[data-connector-after="${previous.dataset.nodeId}"]`
+        );
+        if (connector) connector.classList.add("transmitting");
+      }
+
+      if (
+        follow
+        && current
+        && architecturePanel.scrollHeight > architecturePanel.clientHeight + 1
+      ) {
+        architecturePanel.scrollTo({
+          top: current.offsetTop - (architecturePanel.clientHeight / 2) + (current.clientHeight / 2),
+          behavior: "smooth",
+        });
+      }
+
+      const title = current.querySelector(".node-copy strong").textContent;
+      const progress = ((currentFlowIndex + 1) / flowNodes.length) * 100;
+      flowProgress.style.width = `${progress}%`;
+      flowCounter.textContent = `${currentFlowIndex + 1} / ${flowNodes.length}`;
+      flowState.textContent = `Learning: ${title}`;
+      updateGuide(current, currentFlowIndex);
+      updatePlayerControls();
+    }
+
+    function finishFlow() {
+      clearFlowTimer();
+      flowPlaying = false;
+      const current = currentFlowNode();
+      if (current) {
+        current.classList.remove("playing", "processing", "queued");
+        current.classList.add("completed");
+      }
+      flowProgress.style.width = "100%";
+      flowState.textContent = completionLabel();
+      updatePlayerControls();
+    }
+
+    function scheduleNextStep() {
+      clearFlowTimer();
+      if (!flowPlaying) return;
+
+      const delay = Number(flowSpeed.value) || 5000;
+      flowTimer = setTimeout(() => {
+        if (currentFlowIndex >= flowNodes.length - 1) {
+          finishFlow();
+          return;
+        }
+        showFlowStep(currentFlowIndex + 1, {follow: followFlow});
+        scheduleNextStep();
+      }, delay);
+    }
+
+    function playFlow({follow = true} = {}) {
+      if (!flowNodes.length) return;
+      if (currentFlowIndex >= flowNodes.length - 1) {
+        resetGuidedFlow({autoplay: false, follow});
+      }
+      flowPlaying = true;
+      followFlow = follow;
+      flowState.textContent = `Playing at ${flowSpeed.options[flowSpeed.selectedIndex].text}`;
+      updatePlayerControls();
+      scheduleNextStep();
+    }
+
+    function pauseFlow() {
+      clearFlowTimer();
+      flowPlaying = false;
+      const current = currentFlowNode();
+      if (current) {
+        flowState.textContent = `Paused: ${current.querySelector(".node-copy strong").textContent}`;
+      }
+      updatePlayerControls();
+    }
+
+    function toggleFlowPlayback() {
+      if (flowPlaying) pauseFlow();
+      else playFlow({follow: true});
+    }
+
+    function stepFlow(direction) {
+      pauseFlow();
+      showFlowStep(currentFlowIndex + direction, {follow: true});
+    }
+
+    function resetGuidedFlow({autoplay = false, follow = false} = {}) {
+      clearFlowTimer();
+      flowPlaying = false;
+      followFlow = follow;
+      flowNodes = Array.from(document.querySelectorAll(".engine-node.active"));
+
+      document.querySelectorAll(".engine-node").forEach((node) => {
+        node.classList.remove("playing", "queued", "processing", "completed");
+      });
+      document.querySelectorAll(".connector").forEach((connector) => {
+        connector.classList.remove("transmitting");
+      });
+
+      if (!flowNodes.length) {
+        currentFlowIndex = 0;
+        flowProgress.style.width = "0%";
+        flowCounter.textContent = "0 / 0";
+        flowState.textContent = "No active route";
+        updateGuide(null, 0);
+        updatePlayerControls();
+        return;
+      }
+
+      currentFlowIndex = 0;
+      showFlowStep(0, {follow});
+      flowState.textContent = "Guided tour ready - use Next or Play";
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (autoplay && !reduceMotion) playFlow({follow});
+    }
+
+    function replayArchitecture({follow = false, autoplay = false} = {}) {
+      resetGuidedFlow({autoplay, follow});
     }
 
     function transitionTo(nextState) {
@@ -1813,8 +2776,10 @@
         scenarioLabel.textContent = scenario === "coverage-fix" ? "coverage repair flow" : "failure diagnosis flow";
       } else if (week.n === 5) {
         scenarioControls.innerHTML = `
+          <button class="scenario-btn ${scenario === "no-incident" ? "active" : ""}" data-scenario="no-incident" type="button">No incident</button>
           <button class="scenario-btn ${scenario === "accept" ? "active" : ""}" data-scenario="accept" type="button">Accept</button>
-          <button class="scenario-btn ${scenario === "clarify" ? "active" : ""}" data-scenario="clarify" type="button">Clarify</button>
+          <button class="scenario-btn ${scenario === "clarify" ? "active" : ""}" data-scenario="clarify" type="button">Ambiguous</button>
+          <button class="scenario-btn ${scenario === "conflict" ? "active" : ""}" data-scenario="conflict" type="button">Conflict</button>
           <button class="scenario-btn ${scenario === "no-coverage" ? "active" : ""}" data-scenario="no-coverage" type="button">No coverage</button>
         `;
         scenarioLabel.textContent = `${scenario.replace("-", " ")} route`;
@@ -1872,8 +2837,34 @@
       });
     });
 
-    replayBtn.addEventListener("click", () => replayArchitecture({follow: true}));
-    flowReplayBtn.addEventListener("click", () => replayArchitecture({follow: true}));
+    replayBtn.addEventListener("click", () => replayArchitecture({follow: true, autoplay: true}));
+    flowReplayBtn.addEventListener("click", () => replayArchitecture({follow: true, autoplay: false}));
+    flowPlayBtn.addEventListener("click", toggleFlowPlayback);
+    flowPrevBtn.addEventListener("click", () => stepFlow(-1));
+    flowNextBtn.addEventListener("click", () => stepFlow(1));
+    flowSpeed.addEventListener("change", () => {
+      if (flowPlaying) scheduleNextStep();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const target = event.target;
+      const isTyping = target instanceof HTMLInputElement
+        || target instanceof HTMLTextAreaElement
+        || target instanceof HTMLSelectElement
+        || target?.isContentEditable;
+      if (isTyping) return;
+
+      if (event.code === "Space") {
+        event.preventDefault();
+        toggleFlowPlayback();
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        stepFlow(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        stepFlow(1);
+      }
+    });
 
     render();
   </script>

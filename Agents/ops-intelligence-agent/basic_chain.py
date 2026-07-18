@@ -3,7 +3,11 @@ import urllib.error
 import urllib.request
 
 from evidence_acceptance import assess_evidence
-from hybrid_retriever import format_hybrid_evidence, hybrid_search_rrf
+from hybrid_retriever import (
+    format_hybrid_evidence,
+    hybrid_search_rrf,
+    should_run_hybrid_retrieval,
+)
 
 
 CHAT_COMPLETIONS_URL = "http://127.0.0.1:1234/v1/chat/completions"
@@ -119,8 +123,23 @@ def build_non_analysis_response(assessment):
     }
 
 
+def build_no_incident_response():
+    return {
+        "status": "no_incident",
+        "grounding": "none",
+        "source": None,
+        "reason": "No asserted operational problem signal was detected.",
+        "clarifying_question": None,
+        "analysis": None,
+        "escalation_required": False,
+    }
+
+
 def analyze_alert(alert):
     try:
+        if not should_run_hybrid_retrieval(alert["text"]):
+            return build_no_incident_response()
+
         raw_candidates = hybrid_search_rrf(
             alert["text"],
             top_k=3,

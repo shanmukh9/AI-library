@@ -71,10 +71,25 @@ INCIDENT_PROFILES = {
     },
 }
 
+NEGATION_PATTERN = re.compile(
+    r"\b(?:no|not|never|without)\b(?:\W+\w+){0,3}\W*$",
+    flags=re.IGNORECASE,
+)
+
+
+def is_signal_negated(text, signal_start):
+    prefix = text[max(0, signal_start - 60) : signal_start]
+    return bool(NEGATION_PATTERN.search(prefix))
+
 
 def contains_signal(text, signal):
     pattern = rf"(?<![a-z0-9]){re.escape(signal)}(?![a-z0-9])"
-    return bool(re.search(pattern, text, flags=re.IGNORECASE))
+
+    for match in re.finditer(pattern, text, flags=re.IGNORECASE):
+        if not is_signal_negated(text, match.start()):
+            return True
+
+    return False
 
 
 def matching_signals(query, signals):
@@ -84,6 +99,7 @@ def matching_signals(query, signals):
 def assess_evidence(query, candidates):
     normalized_query = normalize_operational_signals(query).lower()
     family_aligned = []
+    valid_matches = {}
 
     for candidate in candidates:
         profile = INCIDENT_PROFILES.get(candidate["source"])
@@ -109,6 +125,28 @@ def assess_evidence(query, candidates):
             continue
 
         accepted_source = candidate["source"]
+        valid_matches.setdefault(accepted_source, set()).update(
+            category_matches
+        )
+
+    if len(valid_matches) > 1:
+        conflicting_sources = sorted(valid_matches)
+        return {
+            "decision": "clarify",
+            "reason": (
+                "Multiple supported incident categories align: "
+                f"{', '.join(conflicting_sources)}"
+            ),
+            "clarifying_question": (
+                "Multiple incident signals were detected. Which error occurred "
+                "first, and are they part of the same failure?"
+            ),
+            "evidence": [],
+            "raw_candidates": candidates,
+        }
+
+    if len(valid_matches) == 1:
+        accepted_source, category_matches = next(iter(valid_matches.items()))
         accepted_evidence = [
             result for result in candidates if result["source"] == accepted_source
         ]
@@ -116,7 +154,7 @@ def assess_evidence(query, candidates):
             "decision": "accept",
             "reason": (
                 f"Incident signals align with {accepted_source}: "
-                f"{', '.join(category_matches)}"
+                f"{', '.join(sorted(category_matches))}"
             ),
             "clarifying_question": None,
             "evidence": accepted_evidence,

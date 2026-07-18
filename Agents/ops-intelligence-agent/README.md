@@ -667,3 +667,28 @@ Run the combined retrieval and acceptance evaluation:
 ```powershell
 python .\evaluate_hybrid_rrf.py
 ```
+
+Run the adversarial gate evaluation:
+
+```powershell
+python .\evaluate_adversarial_acceptance.py
+```
+
+The hybrid path now uses one shared pre-retrieval signal gate for vector and
+BM25 search. The gate and query expansion are negation-aware, and acceptance
+detects conflicting incident families independently of candidate order.
+
+```text
+no_incident -> no asserted operational problem; retrieval and LLM are skipped
+no_coverage -> operational incident, but no supported runbook aligns
+clarify     -> multiple or ambiguous supported incident families
+accept      -> validated evidence is passed to the LLM
+```
+
+Current adversarial learning-set result:
+
+```text
+Raw signal gate:       6/6
+Hybrid entry gate:     6/6
+Acceptance decisions:  4/4
+```

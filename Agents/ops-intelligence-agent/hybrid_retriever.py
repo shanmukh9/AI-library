@@ -2,6 +2,7 @@ from bm25_retriever import bm25_search
 from runbook_rag import (
     DEFAULT_MIN_SCORE,
     expand_query_for_retrieval,
+    has_operational_problem_signal,
     normalize_operational_signals,
     search_runbooks,
 )
@@ -15,6 +16,14 @@ def reciprocal_rank(rank, k=60):
     return 1 / (k + rank)
 
 
+def build_hybrid_retrieval_query(query):
+    return normalize_operational_signals(expand_query_for_retrieval(query))
+
+
+def should_run_hybrid_retrieval(query):
+    return has_operational_problem_signal(build_hybrid_retrieval_query(query))
+
+
 def hybrid_search_rrf(
     query,
     top_k=3,
@@ -22,7 +31,10 @@ def hybrid_search_rrf(
     rrf_k=60,
     vector_min_score=DEFAULT_MIN_SCORE,
 ):
-    retrieval_query = normalize_operational_signals(expand_query_for_retrieval(query))
+    retrieval_query = build_hybrid_retrieval_query(query)
+    if not has_operational_problem_signal(retrieval_query):
+        return []
+
     vector_results = search_runbooks(
         query,
         top_k=candidate_k,

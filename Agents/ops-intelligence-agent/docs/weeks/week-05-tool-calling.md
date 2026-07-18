@@ -336,3 +336,43 @@ Retriever agreement is consensus, not correctness.
 Similarity is relevance, not proof.
 RRF ranks evidence; the acceptance gate decides whether evidence is usable.
 ```
+
+## Adversarial Gate Hardening
+
+The pipeline now separates two different abstention outcomes:
+
+```text
+no_incident -> no asserted operational problem; stop before retrieval
+no_coverage -> a real incident entered retrieval, but no supported runbook aligns
+```
+
+Vector and BM25 retrieval now share the same entry gate. Negated phrases such
+as `not memory killed` are ignored both by the gate and query expansion, so a
+negative statement cannot be rewritten into a positive OOM incident. Conflicts
+are also detected from distinct matching sources rather than candidate order;
+`Lambda timeout and AccessDenied` therefore returns `clarify` whichever source
+RRF ranks first.
+
+Measured locally on the adversarial learning set:
+
+```text
+Raw signal gate:       6/6
+Hybrid entry gate:     6/6
+Acceptance decisions:  4/4
+```
+
+Examples:
+
+```text
+Database connections are healthy       -> no_incident
+The pod was not memory killed           -> no_incident
+Kafka consumer lag is rising            -> no_coverage
+Lambda timeout plus AccessDenied        -> clarify
+```
+
+Memory hook:
+
+```text
+Polarity before expansion. One gate for every retriever. Conflict detection
+must not depend on ranking order.
+```

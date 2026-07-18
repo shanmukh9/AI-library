@@ -51,7 +51,14 @@ OPERATIONAL_PROBLEM_SIGNALS = [
     "unhealthy",
     "expiring",
     "expires",
+    "accessdenied",
+    "consumer lag",
 ]
+
+NEGATION_PATTERN = re.compile(
+    r"\b(?:no|not|never|without)\b(?:\W+\w+){0,3}\W*$",
+    flags=re.IGNORECASE,
+)
 
 OPERATIONAL_SIGNAL_NORMALIZATIONS = [
     (r"\btimed[\s-]+out\b", "timeout"),
@@ -63,6 +70,8 @@ OPERATIONAL_SIGNAL_NORMALIZATIONS = [
 OPERATIONAL_PROBLEM_PATTERNS = [
     r"\b(?:rds|database|db)\b.{0,40}\bmax(?:imum)?\b.{0,30}\bconnections?\b.{0,30}\breached\b",
     r"\b(?:rds|database|db)\b.{0,40}\bconnections?\b.{0,30}\bmax(?:ed|imum)?\b",
+    r"\b(?:restart|restarted|restarts|restarting)\b",
+    r"\bcrashloop(?:backoff)?\b",
 ]
 
 
@@ -78,10 +87,33 @@ def normalize_operational_signals(query):
     return normalized_query
 
 
+def is_signal_negated(text, signal_start):
+    prefix = text[max(0, signal_start - 60) : signal_start]
+    return bool(NEGATION_PATTERN.search(prefix))
+
+
+def contains_asserted_signal(text, signal):
+    pattern = rf"(?<![a-z0-9]){re.escape(signal)}(?![a-z0-9])"
+    return any(
+        not is_signal_negated(text, match.start())
+        for match in re.finditer(pattern, text, flags=re.IGNORECASE)
+    )
+
+
+def contains_asserted_pattern(text, pattern):
+    return any(
+        not is_signal_negated(text, match.start())
+        for match in re.finditer(pattern, text, flags=re.IGNORECASE)
+    )
+
+
 def has_operational_problem_signal(query):
-    normalized_query = normalize_operational_signals(query).lower()
-    return any(signal in normalized_query for signal in OPERATIONAL_PROBLEM_SIGNALS) or any(
-        re.search(pattern, normalized_query, flags=re.IGNORECASE)
+    normalized_query = normalize_operational_signals(query)
+    return any(
+        contains_asserted_signal(normalized_query, signal)
+        for signal in OPERATIONAL_PROBLEM_SIGNALS
+    ) or any(
+        contains_asserted_pattern(normalized_query, pattern)
         for pattern in OPERATIONAL_PROBLEM_PATTERNS
     )
 
@@ -98,12 +130,14 @@ def load_query_expansion_rules(path=QUERY_EXPANSIONS_PATH):
 
 
 def expand_query_for_retrieval(query):
-    normalized_query = query.lower()
     rules = load_query_expansion_rules()
     expansions = [
         rule["expansion"]
         for rule in rules
-        if any(trigger in normalized_query for trigger in rule["triggers"])
+        if any(
+            contains_asserted_signal(query, trigger)
+            for trigger in rule["triggers"]
+        )
     ]
     if not expansions:
         return query
