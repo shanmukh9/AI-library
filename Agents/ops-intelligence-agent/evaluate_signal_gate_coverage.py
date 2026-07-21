@@ -37,6 +37,30 @@ TEST_CASES = [
         "why": "Access denied during deployment is an operational failure.",
     },
     {
+        "name": "dynamodb_requests_throttled_traffic",
+        "query": "DynamoDB requests are being throttled after traffic increased.",
+        "expected": True,
+        "why": "Actively throttled requests are an operational incident.",
+    },
+    {
+        "name": "dynamodb_requests_throttled_deployment",
+        "query": "DynamoDB requests are being throttled after deployment.",
+        "expected": True,
+        "why": "Actively throttled requests after a deployment should pass the gate.",
+    },
+    {
+        "name": "dynamodb_requests_not_throttled",
+        "query": "DynamoDB requests are not being throttled after deployment.",
+        "expected": False,
+        "why": "A negated throttling condition is not an active incident.",
+    },
+    {
+        "name": "dynamodb_throttling_documentation",
+        "query": "Reviewing documentation about DynamoDB requests being throttled.",
+        "expected": False,
+        "why": "Informational text about throttling is not an active incident.",
+    },
+    {
         "name": "team_connection_meeting",
         "query": "team connection meeting",
         "expected": False,

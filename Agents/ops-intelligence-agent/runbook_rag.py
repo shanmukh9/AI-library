@@ -70,6 +70,11 @@ OPERATIONAL_SIGNAL_NORMALIZATIONS = [
 OPERATIONAL_PROBLEM_PATTERNS = [
     r"\b(?:rds|database|db)\b.{0,40}\bmax(?:imum)?\b.{0,30}\bconnections?\b.{0,30}\breached\b",
     r"\b(?:rds|database|db)\b.{0,40}\bconnections?\b.{0,30}\bmax(?:ed|imum)?\b",
+    (
+        r"^(?!.*\b(?:review(?:ing)?|reading|studying)\b.{0,40}"
+        r"\b(?:documentation|docs?|guide|tutorial|example)\b).*"
+        r"\brequests?\b.{0,40}\b(?P<signal>throttl(?:ed|ing))\b"
+    ),
     r"\b(?:restart|restarted|restarts|restarting)\b",
     r"\bcrashloop(?:backoff)?\b",
 ]
@@ -101,10 +106,15 @@ def contains_asserted_signal(text, signal):
 
 
 def contains_asserted_pattern(text, pattern):
-    return any(
-        not is_signal_negated(text, match.start())
-        for match in re.finditer(pattern, text, flags=re.IGNORECASE)
-    )
+    for match in re.finditer(pattern, text, flags=re.IGNORECASE):
+        signal_start = (
+            match.start("signal")
+            if match.groupdict().get("signal") is not None
+            else match.start()
+        )
+        if not is_signal_negated(text, signal_start):
+            return True
+    return False
 
 
 def has_operational_problem_signal(query):
