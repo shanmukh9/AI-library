@@ -1,0 +1,88 @@
+[
+  {
+    "id": "healthy_database_no_incident",
+    "split": "development",
+    "query": "Database connections are healthy and not exhausted.",
+    "expected": {
+      "retrieval_should_run": false,
+      "expected_candidate_sources": [],
+      "decision": "no_incident",
+      "accepted_sources": [],
+      "llm_should_run": false
+    }
+  },
+  {
+    "id": "lambda_timeout_supported",
+    "split": "development",
+    "query": "Payment Lambda timed out after 15 seconds.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [
+        "lambda-timeout.md"
+      ],
+      "decision": "accept",
+      "accepted_sources": [
+        "lambda-timeout.md"
+      ],
+      "llm_should_run": true
+    }
+  },
+  {
+    "id": "conflicting_lambda_iam",
+    "split": "development",
+    "query": "Lambda timed out and logs show AccessDenied.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [
+        "lambda-timeout.md",
+        "iam-accessdenied.md"
+      ],
+      "decision": "clarify",
+      "accepted_sources": [],
+      "llm_should_run": false
+    }
+  },
+  {
+    "id": "dynamodb_throttling_unsupported",
+    "split": "development",
+    "query": "DynamoDB requests are being throttled after deployment.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [],
+      "decision": "no_coverage",
+      "accepted_sources": [],
+      "llm_should_run": false
+    }
+  },
+  {
+    "id": "kubernetes_oom_after_deployment",
+    "split": "validation",
+    "query": "Kubernetes pod was OOMKilled after deployment and its restart count keeps increasing.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [
+        "kubernetes-oomkill.md"
+      ],
+      "decision": "accept",
+      "accepted_sources": [
+        "kubernetes-oomkill.md"
+      ],
+      "llm_should_run": true
+    }
+  },
+  {
+    "id": "conflicting_ssl_iam",
+    "split": "validation",
+    "query": "TLS certificate expires tomorrow, and renewal logs show AccessDenied for the IAM role.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [
+        "ssl-certificate-expiry.md",
+        "iam-accessdenied.md"
+      ],
+      "decision": "clarify",
+      "accepted_sources": [],
+      "llm_should_run": false
+    }
+  }
+]
