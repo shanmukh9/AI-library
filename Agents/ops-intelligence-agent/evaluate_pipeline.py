@@ -55,7 +55,13 @@ def print_signal_gate_results(results, summary):
     print(f"False negatives: {summary['false_negatives']}")
 
 
-def evaluate_retrieval(cases, signal_gate_results, top_k=3, candidate_k=5):
+def evaluate_retrieval(
+    cases,
+    signal_gate_results,
+    top_k=3,
+    candidate_k=5,
+    ranking_mode="chunk",
+):
     gate_results_by_id = {result["id"]: result for result in signal_gate_results}
     results = []
 
@@ -67,6 +73,7 @@ def evaluate_retrieval(cases, signal_gate_results, top_k=3, candidate_k=5):
                 case["query"],
                 top_k=top_k,
                 candidate_k=candidate_k,
+                ranking_mode=ranking_mode,
             )
             if retrieval_ran
             else []
@@ -76,6 +83,12 @@ def evaluate_retrieval(cases, signal_gate_results, top_k=3, candidate_k=5):
         )
         found_required_sources = required_sources.intersection(actual_sources)
         missing_sources = required_sources.difference(actual_sources)
+        irrelevant_sources = set(actual_sources).difference(required_sources)
+        candidate_source_precision = (
+            len(found_required_sources) / len(actual_sources)
+            if required_sources and actual_sources
+            else None
+        )
 
         results.append(
             {
@@ -87,6 +100,8 @@ def evaluate_retrieval(cases, signal_gate_results, top_k=3, candidate_k=5):
                 "actual_sources": actual_sources,
                 "found_required_sources": sorted(found_required_sources),
                 "missing_sources": sorted(missing_sources),
+                "irrelevant_sources": sorted(irrelevant_sources),
+                "candidate_source_precision": candidate_source_precision,
                 "evaluated": bool(required_sources),
                 "passed": not missing_sources if required_sources else None,
             }
@@ -98,12 +113,23 @@ def summarize_retrieval(results):
     evaluated_results = [result for result in results if result["evaluated"]]
     required_total = sum(len(result["required_sources"]) for result in results)
     found_total = sum(len(result["found_required_sources"]) for result in results)
+    retrieved_total = sum(
+        len(result["actual_sources"]) for result in evaluated_results
+    )
+    irrelevant_total = sum(
+        len(result["irrelevant_sources"]) for result in evaluated_results
+    )
     return {
         "cases_evaluated": len(evaluated_results),
         "cases_passed": sum(result["passed"] for result in evaluated_results),
         "required_total": required_total,
         "found_total": found_total,
+        "retrieved_total": retrieved_total,
+        "irrelevant_total": irrelevant_total,
         "source_coverage": found_total / required_total if required_total else 1.0,
+        "candidate_source_precision": (
+            found_total / retrieved_total if retrieved_total else 1.0
+        ),
     }
 
 
@@ -127,6 +153,12 @@ def print_retrieval_results(results, summary):
         print(f"\n{status} {result['id']}")
         print(f"Required sources: {result['required_sources']}")
         print(f"Actual unique sources: {result['actual_sources']}")
+        if result["evaluated"]:
+            print(f"Irrelevant sources: {result['irrelevant_sources']}")
+            print(
+                "Candidate-source precision: "
+                f"{result['candidate_source_precision']:.1%}"
+            )
         print(f"Result: {detail}")
 
     print("\nSummary")
@@ -139,6 +171,11 @@ def print_retrieval_results(results, summary):
         f"{summary['required_total']}"
     )
     print(f"Required-source coverage: {summary['source_coverage']:.1%}")
+    print(
+        "Candidate-source precision: "
+        f"{summary['candidate_source_precision']:.1%}"
+    )
+    print(f"Irrelevant sources retrieved: {summary['irrelevant_total']}")
 
 
 def evaluate_acceptance(cases, retrieval_results):
@@ -235,17 +272,41 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Evaluate the OIA pipeline stage by stage."
     )
+    parser.add_argument(
+        "--split",
+        choices=("development", "validation", "held_out", "all"),
+        default="development",
+        help=(
+            "Dataset split to evaluate. Defaults to development so validation "
+            "and held-out cases are not exposed accidentally."
+        ),
+    )
     parser.add_argument("--top-k", type=positive_integer, default=3)
     parser.add_argument("--candidate-k", type=positive_integer, default=5)
+    parser.add_argument(
+        "--ranking-mode",
+        choices=("chunk", "source"),
+        default="chunk",
+        help="Use normal chunk RRF or experimental source-level aggregation.",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    pipeline_cases = load_and_validate_cases()
+    all_pipeline_cases = load_and_validate_cases()
+    pipeline_cases = (
+        all_pipeline_cases
+        if args.split == "all"
+        else [case for case in all_pipeline_cases if case["split"] == args.split]
+    )
+    if not pipeline_cases:
+        raise SystemExit(f"No pipeline cases found for split: {args.split}")
+
     print(
-        f"Configuration: top_k={args.top_k}, "
-        f"candidate_k={args.candidate_k}"
+        f"Configuration: split={args.split}, cases={len(pipeline_cases)}, "
+        f"top_k={args.top_k}, candidate_k={args.candidate_k}, "
+        f"ranking_mode={args.ranking_mode}"
     )
     signal_gate_results = evaluate_signal_gate(pipeline_cases)
     signal_gate_summary = summarize_signal_gate(signal_gate_results)
@@ -256,6 +317,7 @@ if __name__ == "__main__":
         signal_gate_results,
         top_k=args.top_k,
         candidate_k=args.candidate_k,
+        ranking_mode=args.ranking_mode,
     )
     retrieval_summary = summarize_retrieval(retrieval_results)
     print_retrieval_results(retrieval_results, retrieval_summary)

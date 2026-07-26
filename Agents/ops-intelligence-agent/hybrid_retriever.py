@@ -16,6 +16,43 @@ def reciprocal_rank(rank, k=60):
     return 1 / (k + rank)
 
 
+def rank_candidates_by_source(ranked_chunks, top_k, score_chunk_limit=3):
+    grouped = {}
+    for rank, chunk in enumerate(ranked_chunks, start=1):
+        source_group = grouped.setdefault(
+            chunk["source"],
+            {
+                "chunks": [],
+                "first_chunk_rank": rank,
+            },
+        )
+        source_group["chunks"].append(chunk)
+
+    source_candidates = []
+    for source_group in grouped.values():
+        supporting_chunks = source_group["chunks"][:score_chunk_limit]
+        representative = dict(source_group["chunks"][0])
+        representative["source_rrf_score"] = sum(
+            chunk["rrf_score"] for chunk in supporting_chunks
+        )
+        representative["source_supporting_chunks"] = len(supporting_chunks)
+        representative["source_supporting_sections"] = [
+            chunk["section"] for chunk in supporting_chunks
+        ]
+        representative["source_first_chunk_rank"] = source_group["first_chunk_rank"]
+        source_candidates.append(representative)
+
+    source_candidates.sort(
+        key=lambda item: (
+            item["source_rrf_score"],
+            item["source_supporting_chunks"],
+            -item["source_first_chunk_rank"],
+        ),
+        reverse=True,
+    )
+    return source_candidates[:top_k]
+
+
 def build_hybrid_retrieval_query(query):
     return normalize_operational_signals(expand_query_for_retrieval(query))
 
@@ -30,7 +67,11 @@ def hybrid_search_rrf(
     candidate_k=5,
     rrf_k=60,
     vector_min_score=DEFAULT_MIN_SCORE,
+    ranking_mode="chunk",
 ):
+    if ranking_mode not in {"chunk", "source"}:
+        raise ValueError(f"Unsupported hybrid ranking mode: {ranking_mode}")
+
     retrieval_query = build_hybrid_retrieval_query(query)
     if not has_operational_problem_signal(retrieval_query):
         return []
@@ -94,6 +135,8 @@ def hybrid_search_rrf(
         ),
         reverse=True,
     )
+    if ranking_mode == "source":
+        return rank_candidates_by_source(ranked, top_k=top_k)
     return ranked[:top_k]
 
 

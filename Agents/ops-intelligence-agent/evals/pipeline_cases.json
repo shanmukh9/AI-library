@@ -84,5 +84,60 @@
       "accepted_sources": [],
       "llm_should_run": false
     }
+  },
+  {
+    "id": "rds_pool_exhaustion_regression",
+    "split": "development",
+    "query": "RDS connections reached the configured maximum, and checkout requests are failing.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [
+        "rds-connection-pool.md"
+      ],
+      "decision": "accept",
+      "accepted_sources": [
+        "rds-connection-pool.md"
+      ],
+      "llm_should_run": true
+    }
+  },
+  {
+    "id": "conflicting_rds_iam_regression",
+    "split": "development",
+    "query": "RDS connections reached their maximum, and database logs also show AccessDenied.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [
+        "rds-connection-pool.md",
+        "iam-accessdenied.md"
+      ],
+      "decision": "clarify",
+      "accepted_sources": [],
+      "llm_should_run": false
+    }
+  },
+  {
+    "id": "dynamodb_throttling_regression",
+    "split": "development",
+    "query": "DynamoDB write requests are being throttled after traffic increased.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [],
+      "decision": "no_coverage",
+      "accepted_sources": [],
+      "llm_should_run": false
+    }
+  },
+  {
+    "id": "healthy_dynamodb_regression",
+    "split": "development",
+    "query": "DynamoDB traffic is healthy and no requests are being throttled.",
+    "expected": {
+      "retrieval_should_run": false,
+      "expected_candidate_sources": [],
+      "decision": "no_incident",
+      "accepted_sources": [],
+      "llm_should_run": false
+    }
   }
 ]

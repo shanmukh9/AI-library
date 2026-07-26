@@ -22,7 +22,8 @@ fallback, reranking, and the grounded LLM chain.
 - Week 2: runbook RAG baseline complete locally.
 - Week 3: advanced RAG complete locally.
 - Week 4: retrieval evaluation and architecture decisions complete locally.
-- Week 5: BM25 lexical retrieval baseline complete locally.
+- Week 5: hybrid retrieval and evidence acceptance complete locally.
+- Week 6: pipeline evaluation engineering in progress.
 
 ## Week 1 Baseline
 

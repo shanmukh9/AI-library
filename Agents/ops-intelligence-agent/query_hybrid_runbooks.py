@@ -7,6 +7,11 @@ parser = argparse.ArgumentParser(description="Query runbooks with hybrid RRF ret
 parser.add_argument("query", nargs="*", help="Operational alert text.")
 parser.add_argument("--top-k", type=int, default=3)
 parser.add_argument("--candidate-k", type=int, default=5)
+parser.add_argument(
+    "--ranking-mode",
+    choices=("chunk", "source"),
+    default="chunk",
+)
 args = parser.parse_args()
 
 query = " ".join(args.query).strip()
@@ -17,10 +22,11 @@ results = hybrid_search_rrf(
     query,
     top_k=args.top_k,
     candidate_k=args.candidate_k,
+    ranking_mode=args.ranking_mode,
 )
 
 print(f"Query: {query}")
-print("Ranking mode: Hybrid RRF")
+print(f"Ranking mode: Hybrid RRF ({args.ranking_mode})")
 print(f"Candidate depth per retriever: {args.candidate_k}")
 print()
 
@@ -58,5 +64,12 @@ else:
             f"vector={vector_score}, "
             f"bm25={bm25_score}"
         )
+        if args.ranking_mode == "source":
+            print(
+                "source aggregation: "
+                f"score={result['source_rrf_score']:.5f}, "
+                f"chunks={result['source_supporting_chunks']}, "
+                f"sections={result['source_supporting_sections']}"
+            )
         print(result["text"])
         print()
