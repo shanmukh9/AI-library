@@ -139,5 +139,132 @@
       "accepted_sources": [],
       "llm_should_run": false
     }
+  },
+  {
+    "id": "lambda_timeout_negated_iam",
+    "split": "development",
+    "query": "Lambda timed out, but logs confirm it was not AccessDenied.",
+    "expected": {
+      "retrieval_should_run": true,
+      "expected_candidate_sources": [
+        "lambda-timeout.md"
+      ],
+      "decision": "accept",
+      "accepted_sources": [
+        "lambda-timeout.md"
+      ],
+      "llm_should_run": true
+    }
+  },
+  {
+  "id": "conflicting_alb502_kubernetes_development",
+  "split": "development",
+  "query": "Checkout requests return HTTP 502, and the backend pod was OOMKilled after deployment.",
+  "expected": {
+    "retrieval_should_run": true,
+    "expected_candidate_sources": [
+      "alb-502-health-checks.md",
+      "kubernetes-oomkill.md"
+    ],
+    "decision": "clarify",
+    "accepted_sources": [],
+    "llm_should_run": false
   }
+},
+{
+  "id": "http504_upstream_latency_development",
+  "split": "development",
+  "query": "Checkout gateway returns HTTP 504 while upstream responses exceed 30 seconds.",
+  "expected": {
+    "retrieval_should_run": true,
+    "expected_candidate_sources": [
+      "http-504-gateway-timeout.md"
+    ],
+    "decision": "accept",
+    "accepted_sources": [
+      "http-504-gateway-timeout.md"
+    ],
+    "llm_should_run": true
+  }
+},
+{
+  "id": "redis_timeout_no_coverage_development",
+  "split": "development",
+  "query": "Redis cache requests are timing out after failover, and cache latency keeps increasing.",
+  "expected": {
+    "retrieval_should_run": true,
+    "expected_candidate_sources": [],
+    "decision": "no_coverage",
+    "accepted_sources": [],
+    "llm_should_run": false
+  }
+},
+{
+  "id": "healthy_redis_no_incident_development",
+  "split": "development",
+  "query": "Redis cache is healthy; no requests are timing out, and latency is normal.",
+  "expected": {
+    "retrieval_should_run": false,
+    "expected_candidate_sources": [],
+    "decision": "no_incident",
+    "accepted_sources": [],
+    "llm_should_run": false
+  }
+},
+{
+  "id": "stable_latency_ssl_expiry_development",
+  "split": "development",
+  "query": "API latency remains stable, but its TLS certificate expires tomorrow.",
+  "expected": {
+    "retrieval_should_run": true,
+    "expected_candidate_sources": [
+      "ssl-certificate-expiry.md"
+    ],
+    "decision": "accept",
+    "accepted_sources": [
+      "ssl-certificate-expiry.md"
+    ],
+    "llm_should_run": true
+  }
+},
+{
+  "id": "conflicting_rds_ssl_development",
+  "split": "development",
+  "query": "Database connections are exhausted, and the service TLS certificate expires tomorrow.",
+  "expected": {
+    "retrieval_should_run": true,
+    "expected_candidate_sources": [
+      "rds-connection-pool.md",
+      "ssl-certificate-expiry.md"
+    ],
+    "decision": "clarify",
+    "accepted_sources": [],
+    "llm_should_run": false
+  }
+},
+{
+  "id": "elasticsearch_red_cluster_development",
+  "split": "development",
+  "query": "Elasticsearch shard allocation failed after a node restart, and the cluster remains red.",
+  "expected": {
+    "retrieval_should_run": true,
+    "expected_candidate_sources": [],
+    "decision": "no_coverage",
+    "accepted_sources": [],
+    "llm_should_run": false
+  }
+},
+{
+  "id": "healthy_api_metrics_development",
+  "split": "development",
+  "query": "API error rate is normal, latency remains stable, and no requests are failing.",
+  "expected": {
+    "retrieval_should_run": false,
+    "expected_candidate_sources": [],
+    "decision": "no_incident",
+    "accepted_sources": [],
+    "llm_should_run": false
+  }
+}
+
 ]

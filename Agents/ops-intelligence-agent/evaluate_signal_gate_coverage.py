@@ -90,6 +90,32 @@ TEST_CASES = [
         "expected": False,
         "why": "Normal status text should not enter retrieval.",
     },
+    {
+    "name": "healthy_redis_latency",
+    "query": (
+        "Redis cache is healthy; no requests are timing out, "
+        "and latency is normal."
+    ),
+    "expected": False,
+    "why": "Healthy and locally normalized signals must not enter retrieval.",
+},
+{
+    "name": "healthy_latency_with_active_504",
+    "query": (
+        "Redis latency is normal, but checkout requests return HTTP 504."
+    ),
+    "expected": True,
+    "why": "A healthy latency signal must not hide an independent 504 incident.",
+},
+{
+    "name": "healthy_api_error_rate",
+    "query": (
+        "API error rate is normal, latency remains stable, "
+        "and no requests are failing."
+    ),
+    "expected": False,
+    "why": "Normal error rate and stable latency do not describe an incident.",
+},
 ]
 
 

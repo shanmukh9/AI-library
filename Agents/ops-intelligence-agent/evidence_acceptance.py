@@ -1,6 +1,9 @@
 import re
 
-from runbook_rag import normalize_operational_signals
+from runbook_rag import (
+    contains_asserted_signal,
+    normalize_operational_signals,
+)
 
 
 INCIDENT_PROFILES = {
@@ -71,15 +74,9 @@ INCIDENT_PROFILES = {
     },
 }
 
-NEGATION_PATTERN = re.compile(
-    r"\b(?:no|not|never|without)\b(?:\W+\w+){0,3}\W*$",
-    flags=re.IGNORECASE,
-)
 
 
-def is_signal_negated(text, signal_start):
-    prefix = text[max(0, signal_start - 60) : signal_start]
-    return bool(NEGATION_PATTERN.search(prefix))
+
 
 
 def contains_signal(text, signal):
@@ -93,7 +90,42 @@ def contains_signal(text, signal):
 
 
 def matching_signals(query, signals):
-    return [signal for signal in signals if contains_signal(query, signal)]
+    return [
+        signal
+        for signal in signals
+        if contains_asserted_signal(query, signal)
+    ]
+
+
+def match_incident_profile(normalized_query, profile):
+    family_matches = matching_signals(
+        normalized_query,
+        profile["family_signals"],
+    )
+    category_matches = matching_signals(
+        normalized_query,
+        profile["category_signals"],
+    )
+    category_is_sufficient = bool(category_matches) and (
+        profile["distinctive_category"] or bool(family_matches)
+    )
+    return {
+        "family_matches": family_matches,
+        "category_matches": category_matches,
+        "category_is_sufficient": category_is_sufficient,
+    }
+
+
+def detect_supported_incident_sources(query):
+    normalized_query = normalize_operational_signals(query).lower()
+    return sorted(
+        source
+        for source, profile in INCIDENT_PROFILES.items()
+        if match_incident_profile(
+            normalized_query,
+            profile,
+        )["category_is_sufficient"]
+    )
 
 
 def assess_evidence(query, candidates):
@@ -106,22 +138,14 @@ def assess_evidence(query, candidates):
         if not profile:
             continue
 
-        family_matches = matching_signals(
-            normalized_query,
-            profile["family_signals"],
-        )
-        category_matches = matching_signals(
-            normalized_query,
-            profile["category_signals"],
-        )
+        profile_match = match_incident_profile(normalized_query, profile)
+        family_matches = profile_match["family_matches"]
+        category_matches = profile_match["category_matches"]
 
         if family_matches:
             family_aligned.append((candidate, profile, family_matches))
 
-        category_is_sufficient = bool(category_matches) and (
-            profile["distinctive_category"] or bool(family_matches)
-        )
-        if not category_is_sufficient:
+        if not profile_match["category_is_sufficient"]:
             continue
 
         accepted_source = candidate["source"]

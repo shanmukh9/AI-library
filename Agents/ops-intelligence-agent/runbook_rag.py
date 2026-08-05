@@ -60,11 +60,19 @@ NEGATION_PATTERN = re.compile(
     flags=re.IGNORECASE,
 )
 
+HEALTHY_STATE_SUFFIX_PATTERN = re.compile(
+    r"^\W*(?:(?:rate|level|count|usage|percentage)\W+)?"
+    r"(?:(?:is|are|was|were|remains?|stays?)\W+)?"
+    r"(?:normal|healthy|stable)\b",
+    flags=re.IGNORECASE,
+)
+
 OPERATIONAL_SIGNAL_NORMALIZATIONS = [
     (r"\btimed[\s-]+out\b", "timeout"),
     (r"\btiming[\s-]+out\b", "timeout"),
     (r"\btimes[\s-]+out\b", "timeout"),
     (r"\btime[\s-]+out\b", "timeout"),
+    (r"\bconnections?\s+(?:is|are|was|were|became)\s+exhausted\b","connections exhausted"),
 ]
 
 OPERATIONAL_PROBLEM_PATTERNS = [
@@ -96,11 +104,16 @@ def is_signal_negated(text, signal_start):
     prefix = text[max(0, signal_start - 60) : signal_start]
     return bool(NEGATION_PATTERN.search(prefix))
 
+def is_signal_marked_healthy(text, signal_end):
+    suffix = text[signal_end : signal_end + 40]
+    return bool(HEALTHY_STATE_SUFFIX_PATTERN.search(suffix))
+
 
 def contains_asserted_signal(text, signal):
     pattern = rf"(?<![a-z0-9]){re.escape(signal)}(?![a-z0-9])"
     return any(
         not is_signal_negated(text, match.start())
+        and not is_signal_marked_healthy(text, match.end())
         for match in re.finditer(pattern, text, flags=re.IGNORECASE)
     )
 

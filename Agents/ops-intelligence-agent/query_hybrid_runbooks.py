@@ -1,6 +1,6 @@
 import argparse
 
-from hybrid_retriever import hybrid_search_rrf
+from hybrid_retriever import hybrid_search_rrf, resolve_hybrid_ranking_mode
 
 
 parser = argparse.ArgumentParser(description="Query runbooks with hybrid RRF retrieval.")
@@ -9,7 +9,7 @@ parser.add_argument("--top-k", type=int, default=3)
 parser.add_argument("--candidate-k", type=int, default=5)
 parser.add_argument(
     "--ranking-mode",
-    choices=("chunk", "source"),
+    choices=("chunk", "source", "conditional", "adaptive"),
     default="chunk",
 )
 args = parser.parse_args()
@@ -27,6 +27,22 @@ results = hybrid_search_rrf(
 
 print(f"Query: {query}")
 print(f"Ranking mode: Hybrid RRF ({args.ranking_mode})")
+resolved_ranking_mode = (
+    results[0].get("resolved_ranking_mode")
+    if results
+    else resolve_hybrid_ranking_mode(query, args.ranking_mode)
+)
+print(
+    "Resolved ranking mode: "
+    f"{resolved_ranking_mode}"
+)
+if args.ranking_mode == "adaptive":
+    retry_used = results[0].get("adaptive_retry_used", False) if results else False
+    missing_sources = (
+        results[0].get("adaptive_missing_sources", []) if results else []
+    )
+    print(f"Adaptive retry used: {retry_used}")
+    print(f"Sources missing before retry: {missing_sources}")
 print(f"Candidate depth per retriever: {args.candidate_k}")
 print()
 
@@ -64,7 +80,7 @@ else:
             f"vector={vector_score}, "
             f"bm25={bm25_score}"
         )
-        if args.ranking_mode == "source":
+        if "source_rrf_score" in result:
             print(
                 "source aggregation: "
                 f"score={result['source_rrf_score']:.5f}, "

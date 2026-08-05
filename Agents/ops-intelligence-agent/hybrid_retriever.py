@@ -1,4 +1,5 @@
 from bm25_retriever import bm25_search
+from evidence_acceptance import detect_supported_incident_sources
 from runbook_rag import (
     DEFAULT_MIN_SCORE,
     expand_query_for_retrieval,
@@ -61,6 +62,34 @@ def should_run_hybrid_retrieval(query):
     return has_operational_problem_signal(build_hybrid_retrieval_query(query))
 
 
+def resolve_hybrid_ranking_mode(query, ranking_mode):
+    if ranking_mode == "conditional":
+        detected_sources = detect_supported_incident_sources(query)
+        return "source" if len(detected_sources) >= 2 else "chunk"
+    if ranking_mode == "adaptive":
+        return "chunk"
+    return ranking_mode
+
+
+def annotate_adaptive_results(
+    results,
+    *,
+    retry_used,
+    initial_sources,
+    missing_sources,
+    resolved_ranking_mode,
+):
+    annotated = []
+    for result in results:
+        item = dict(result)
+        item["adaptive_retry_used"] = retry_used
+        item["adaptive_initial_sources"] = sorted(initial_sources)
+        item["adaptive_missing_sources"] = sorted(missing_sources)
+        item["resolved_ranking_mode"] = resolved_ranking_mode
+        annotated.append(item)
+    return annotated
+
+
 def hybrid_search_rrf(
     query,
     top_k=3,
@@ -69,9 +98,49 @@ def hybrid_search_rrf(
     vector_min_score=DEFAULT_MIN_SCORE,
     ranking_mode="chunk",
 ):
-    if ranking_mode not in {"chunk", "source"}:
+    if ranking_mode not in {"chunk", "source", "conditional", "adaptive"}:
         raise ValueError(f"Unsupported hybrid ranking mode: {ranking_mode}")
 
+    if ranking_mode == "adaptive":
+        detected_sources = set(detect_supported_incident_sources(query))
+        initial_results = hybrid_search_rrf(
+            query,
+            top_k=top_k,
+            candidate_k=candidate_k,
+            rrf_k=rrf_k,
+            vector_min_score=vector_min_score,
+            ranking_mode="chunk",
+        )
+        initial_sources = {result["source"] for result in initial_results}
+        missing_sources = detected_sources.difference(initial_sources)
+        retry_used = len(detected_sources) >= 2 and bool(missing_sources)
+
+        if retry_used:
+            retry_results = hybrid_search_rrf(
+                query,
+                top_k=top_k,
+                candidate_k=max(candidate_k, 10),
+                rrf_k=rrf_k,
+                vector_min_score=vector_min_score,
+                ranking_mode="source",
+            )
+            return annotate_adaptive_results(
+                retry_results,
+                retry_used=True,
+                initial_sources=initial_sources,
+                missing_sources=missing_sources,
+                resolved_ranking_mode="source",
+            )
+
+        return annotate_adaptive_results(
+            initial_results,
+            retry_used=False,
+            initial_sources=initial_sources,
+            missing_sources=missing_sources,
+            resolved_ranking_mode="chunk",
+        )
+
+    resolved_ranking_mode = resolve_hybrid_ranking_mode(query, ranking_mode)
     retrieval_query = build_hybrid_retrieval_query(query)
     if not has_operational_problem_signal(retrieval_query):
         return []
@@ -135,7 +204,7 @@ def hybrid_search_rrf(
         ),
         reverse=True,
     )
-    if ranking_mode == "source":
+    if resolved_ranking_mode == "source":
         return rank_candidates_by_source(ranked, top_k=top_k)
     return ranked[:top_k]
 

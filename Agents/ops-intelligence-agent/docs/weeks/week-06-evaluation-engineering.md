@@ -61,8 +61,8 @@ python .\evaluate_pipeline.py --split all
 The data-contract validator currently reports:
 
 ```text
-Validated 10 pipeline cases
-Splits: development=8, held_out=0, validation=2
+Validated 11 pipeline cases
+Splits: development=9, held_out=0, validation=2
 Data contract: PASS
 ```
 
@@ -127,6 +127,78 @@ substantially increased irrelevant evidence. It is therefore not promoted to
 the global default. The next hypothesis is conditional source discovery only
 when the query contains credible signals for multiple incident categories.
 
+## Conditional Ranking Experiment
+
+The next experiment used negation-aware incident-profile detection:
+
+```text
+zero or one active supported incident source -> chunk ranking
+two or more active supported sources        -> source ranking
+```
+
+The development set added:
+
+```text
+Lambda timed out, but logs confirm it was not AccessDenied.
+```
+
+The router correctly detected only `lambda-timeout.md`; the negated IAM signal
+did not trigger source ranking.
+
+Measured comparison with `top_k=3` and `candidate_k=10`:
+
+| Split | Mode | Source recall | Source precision | Final decisions |
+| --- | --- | ---: | ---: | ---: |
+| Development | Chunk | 71.4% | 83.3% | 7/9 |
+| Development | Conditional | 100% | 70% | 9/9 |
+| Validation | Chunk | 100% | 100% | 2/2 |
+| Validation | Conditional | 100% | 75% | 2/2 |
+
+Conditional routing fixed the known Lambda/IAM and RDS/IAM development
+conflicts, but it broadened the already-correct SSL/IAM validation case and
+introduced `lambda-timeout.md` without improving the decision.
+
+The policy is therefore not promoted to `basic_chain.py`. A stronger next
+hypothesis is adaptive retry:
+
+1. run precise chunk ranking first,
+2. compare retrieved sources with the active incident sources detected in the
+   query,
+3. retry with source aggregation only when a multi-signal query is missing an
+   expected source,
+4. send the resulting candidates to evidence acceptance.
+
+## Adaptive Retry Experiment
+
+Adaptive mode preserves precise retrieval as the first attempt:
+
+```text
+chunk retrieval
+  -> compare active incident sources with retrieved sources
+  -> retry with source aggregation only when a multi-signal query is missing
+     at least one detected source
+  -> evidence acceptance makes the final trust decision
+```
+
+The retry uses `candidate_k=10`; non-retried queries remain at `candidate_k=5`.
+
+Measured comparison:
+
+| Split | Mode | Source recall | Source precision | Final decisions | Retries |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Development | Chunk | 71.4% | 71.4% | 7/9 | 0 |
+| Development | Adaptive | 100% | 63.6% | 9/9 | 2 |
+| Validation | Chunk | 100% | 100% | 2/2 | 0 |
+| Validation | Adaptive | 100% | 100% | 2/2 | 0 |
+
+Adaptive mode retried only the Lambda/IAM and RDS/IAM development conflicts.
+It did not retry the already-correct SSL/IAM validation case or the negated IAM
+development case. This recovered conflict evidence without reducing validation
+precision.
+
+The result supports creating a fresh held-out evaluation, but it is not yet
+enough evidence to change the production path in `basic_chain.py`.
+
 ## Learning
 
 - A split describes which cases are being used; a metric describes how their
@@ -138,7 +210,8 @@ when the query contains credible signals for multiple incident categories.
 
 ## Remaining Work
 
-1. Evaluate conditional source discovery on development and validation cases.
-2. Keep normal single-incident queries on precise chunk ranking.
-3. Design and freeze a fresh held-out set.
-4. Run the final selected policy once against that fresh held-out split.
+1. Design and freeze a fresh held-out set.
+2. Run chunk and adaptive policies once against that set.
+3. Promote adaptive retry only if held-out decisions improve without an
+   unacceptable precision or latency regression.
+4. Record the final Week 6 architecture decision.

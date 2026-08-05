@@ -1,7 +1,11 @@
 import argparse
 
-from evidence_acceptance import assess_evidence
-from hybrid_retriever import hybrid_search_rrf, should_run_hybrid_retrieval
+from evidence_acceptance import assess_evidence, detect_supported_incident_sources
+from hybrid_retriever import (
+    hybrid_search_rrf,
+    resolve_hybrid_ranking_mode,
+    should_run_hybrid_retrieval,
+)
 from validate_pipeline_cases import load_and_validate_cases
 
 
@@ -68,6 +72,11 @@ def evaluate_retrieval(
     for case in cases:
         required_sources = set(case["expected"]["expected_candidate_sources"])
         retrieval_ran = gate_results_by_id[case["id"]]["actual"]
+        detected_incident_sources = detect_supported_incident_sources(case["query"])
+        resolved_ranking_mode = resolve_hybrid_ranking_mode(
+            case["query"],
+            ranking_mode,
+        )
         candidates = (
             hybrid_search_rrf(
                 case["query"],
@@ -78,6 +87,13 @@ def evaluate_retrieval(
             if retrieval_ran
             else []
         )
+        if candidates and ranking_mode == "adaptive":
+            resolved_ranking_mode = candidates[0]["resolved_ranking_mode"]
+            adaptive_retry_used = candidates[0]["adaptive_retry_used"]
+            adaptive_missing_sources = candidates[0]["adaptive_missing_sources"]
+        else:
+            adaptive_retry_used = False
+            adaptive_missing_sources = []
         actual_sources = list(
             dict.fromkeys(candidate["source"] for candidate in candidates)
         )
@@ -95,6 +111,11 @@ def evaluate_retrieval(
                 "id": case["id"],
                 "query": case["query"],
                 "retrieval_ran": retrieval_ran,
+                "requested_ranking_mode": ranking_mode,
+                "detected_incident_sources": detected_incident_sources,
+                "resolved_ranking_mode": resolved_ranking_mode,
+                "adaptive_retry_used": adaptive_retry_used,
+                "adaptive_missing_sources": adaptive_missing_sources,
                 "candidates": candidates,
                 "required_sources": sorted(required_sources),
                 "actual_sources": actual_sources,
@@ -126,6 +147,9 @@ def summarize_retrieval(results):
         "found_total": found_total,
         "retrieved_total": retrieved_total,
         "irrelevant_total": irrelevant_total,
+        "adaptive_retries": sum(
+            result["adaptive_retry_used"] for result in results
+        ),
         "source_coverage": found_total / required_total if required_total else 1.0,
         "candidate_source_precision": (
             found_total / retrieved_total if retrieved_total else 1.0
@@ -152,6 +176,14 @@ def print_retrieval_results(results, summary):
 
         print(f"\n{status} {result['id']}")
         print(f"Required sources: {result['required_sources']}")
+        print(f"Detected incident sources: {result['detected_incident_sources']}")
+        print(f"Resolved ranking mode: {result['resolved_ranking_mode']}")
+        if result["requested_ranking_mode"] == "adaptive":
+            print(f"Adaptive retry used: {result['adaptive_retry_used']}")
+            print(
+                "Sources missing before retry: "
+                f"{result['adaptive_missing_sources']}"
+            )
         print(f"Actual unique sources: {result['actual_sources']}")
         if result["evaluated"]:
             print(f"Irrelevant sources: {result['irrelevant_sources']}")
@@ -176,6 +208,8 @@ def print_retrieval_results(results, summary):
         f"{summary['candidate_source_precision']:.1%}"
     )
     print(f"Irrelevant sources retrieved: {summary['irrelevant_total']}")
+    if results and results[0]["requested_ranking_mode"] == "adaptive":
+        print(f"Adaptive retries used: {summary['adaptive_retries']}")
 
 
 def evaluate_acceptance(cases, retrieval_results):
@@ -285,9 +319,12 @@ def parse_args():
     parser.add_argument("--candidate-k", type=positive_integer, default=5)
     parser.add_argument(
         "--ranking-mode",
-        choices=("chunk", "source"),
+        choices=("chunk", "source", "conditional", "adaptive"),
         default="chunk",
-        help="Use normal chunk RRF or experimental source-level aggregation.",
+        help=(
+            "Use chunk RRF, source aggregation, conditional selection, or an "
+            "adaptive source retry when precise retrieval misses active signals."
+        ),
     )
     return parser.parse_args()
 
