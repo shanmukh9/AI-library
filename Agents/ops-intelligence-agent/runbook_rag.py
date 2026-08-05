@@ -72,7 +72,10 @@ OPERATIONAL_SIGNAL_NORMALIZATIONS = [
     (r"\btiming[\s-]+out\b", "timeout"),
     (r"\btimes[\s-]+out\b", "timeout"),
     (r"\btime[\s-]+out\b", "timeout"),
-    (r"\bconnections?\s+(?:is|are|was|were|became)\s+exhausted\b","connections exhausted"),
+    (
+        r"\bconnections?\s+(?:is|are|was|were|became)\s+exhausted\b",
+        "connections exhausted",
+    ),
 ]
 
 OPERATIONAL_PROBLEM_PATTERNS = [
@@ -103,6 +106,7 @@ def normalize_operational_signals(query):
 def is_signal_negated(text, signal_start):
     prefix = text[max(0, signal_start - 60) : signal_start]
     return bool(NEGATION_PATTERN.search(prefix))
+
 
 def is_signal_marked_healthy(text, signal_end):
     suffix = text[signal_end : signal_end + 40]

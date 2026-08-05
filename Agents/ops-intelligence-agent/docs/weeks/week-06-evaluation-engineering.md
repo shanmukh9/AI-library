@@ -1,6 +1,6 @@
 # Week 06 - Pipeline Evaluation Engineering
 
-> Status: In progress
+> Status: Complete locally
 
 ## Goal
 
@@ -61,26 +61,21 @@ python .\evaluate_pipeline.py --split all
 The data-contract validator currently reports:
 
 ```text
-Validated 11 pipeline cases
-Splits: development=9, held_out=0, validation=2
+Validated 23 pipeline cases
+Splits: development=17, held_out=4, validation=2
 Data contract: PASS
 ```
 
-The first held-out round covered a supported RDS incident, an RDS and IAM
-conflict, unsupported DynamoDB throttling, and a healthy DynamoDB statement.
-The frozen `top_k=3`, `candidate_k=5` configuration produced:
+Week 6 used three evaluation lifecycles:
 
-```text
-Signal gate: 4/4
-Required-source recall: 66.7%
-Candidate-source precision: 66.7%
-Decision and LLM-routing accuracy: 3/4
-```
+1. Development cases exposed failures and became permanent regressions.
+2. Validation cases selected `top_k=3`, `candidate_k=5` over the noisier
+   `top_k=5` alternative.
+3. A fresh four-case held-out set was opened once after the adaptive
+   configuration and shared signal semantics were frozen.
 
-The RDS and IAM conflict retrieved only the RDS source, so evidence acceptance
-incorrectly allowed the LLM. Because this result now influences development,
-the consumed held-out cases have become development regression cases. A fresh
-held-out set is required for the next final evaluation.
+Earlier held-out cases that influenced implementation were moved into the
+development split. This avoids presenting tuned examples as unbiased proof.
 
 ## Validation Decision
 
@@ -196,8 +191,93 @@ It did not retry the already-correct SSL/IAM validation case or the negated IAM
 development case. This recovered conflict evidence without reducing validation
 precision.
 
-The result supports creating a fresh held-out evaluation, but it is not yet
-enough evidence to change the production path in `basic_chain.py`.
+This result justified a fresh held-out evaluation. At that point it was not yet
+enough evidence to change the main path in `basic_chain.py`.
+
+## Shared Signal Semantics
+
+The fresh held-out set exposed an important cross-stage consistency problem.
+Retrieval found the required runbooks, but the signal gate and evidence
+acceptance interpreted phrases such as `latency remains stable`, `error rate is
+normal`, and `connections are exhausted` differently.
+
+The final design centralizes asserted-signal interpretation in
+`runbook_rag.py`. It now handles:
+
+- prefix negation, such as `not AccessDenied`,
+- healthy suffixes, such as `latency is normal`,
+- optional metric nouns, such as `error rate is normal`,
+- operational normalization, such as `connections are exhausted` becoming
+  `connections exhausted`.
+
+`evidence_acceptance.py` reuses the same asserted-signal function instead of
+maintaining a second partially overlapping matcher. This is code reuse with a
+safety purpose: all stages now agree on whether a signal is active.
+
+## Final Held-Out Evaluation
+
+The frozen configuration was:
+
+```text
+ranking mode: adaptive
+top_k:        3
+candidate_k:  5
+retry depth:  10 candidates only when a credible multi-source query is missing
+              a detected source
+```
+
+The fresh held-out cases covered a healthy metric beside an SSL incident, an
+RDS and SSL conflict, unsupported Elasticsearch failure, and a fully healthy
+API statement.
+
+| Measure | Result |
+| --- | ---: |
+| Signal-gate decisions | 4/4 |
+| Required sources found | 3/3 |
+| Required-source coverage | 100% |
+| Candidate-source precision | 75% |
+| Evidence decisions | 4/4 |
+| Accepted-source decisions | 4/4 |
+| LLM-routing decisions | 4/4 |
+| Unsafe LLM calls | 0 |
+
+No adaptive retry was needed in this held-out run because precise chunk
+retrieval already surfaced both required sources for the conflict case. That
+is desirable: adaptive mode is a recovery path, not a mandatory second search.
+
+## Main-Chain Promotion
+
+`basic_chain.py` now uses adaptive Hybrid RRF retrieval with the frozen
+configuration. Every result contains a compact retrieval trace with:
+
+```text
+requested ranking mode
+resolved ranking mode
+whether adaptive retry ran
+detected, initial, missing, candidate, and accepted sources
+evidence-acceptance decision
+```
+
+`evaluate_main_chain_routing.py` exercises the real local retrieval and routing
+path while replacing only the slow chat-model call with a deterministic fake.
+This verifies that Python, rather than the LLM, owns the routing policy.
+
+```text
+Routing scenarios: 5/5
+Actual fake LLM calls: 1
+Expected fake LLM calls: 1
+```
+
+The accepted single-source incident reached the model. Conflict,
+no-coverage, and no-incident scenarios did not.
+
+## Final Week 6 Decision
+
+Adaptive retrieval is promoted to the local main chain because it recovered
+known multi-source failures, preserved validation precision, passed the fresh
+held-out routing decisions, and avoided unnecessary retries. Evidence
+acceptance remains the trust boundary: retrieval proposes candidates, but only
+an `accept` decision permits an LLM call.
 
 ## Learning
 
@@ -207,11 +287,22 @@ enough evidence to change the production path in `basic_chain.py`.
 - Once a held-out case directly influences a code change, it must become a
   development or regression case.
 - Stage-level results are more actionable than a single end-to-end percentage.
+- Required-source coverage can be perfect while final routing is still wrong.
+- Shared semantic interpretation across gates matters as much as retrieval
+  ranking.
+- Adaptive retrieval controls search breadth; evidence acceptance controls
+  trust.
+- Candidate precision must be measured alongside recall so irrelevant sources
+  cannot hide behind a successful final decision.
 
-## Remaining Work
+## Known Limitations
 
-1. Design and freeze a fresh held-out set.
-2. Run chunk and adaptive policies once against that set.
-3. Promote adaptive retry only if held-out decisions improve without an
-   unacceptable precision or latency regression.
-4. Record the final Week 6 architecture decision.
+1. The datasets are small, synthetic, and local; the results are learning
+   evidence, not a production accuracy claim.
+2. Raw candidate-source precision remains `68.4%` on development and `75%` on
+   held-out data. Evidence acceptance contains this noise before generation,
+   but retrieval precision remains an improvement target.
+3. Deterministic incident profiles cannot yet represent every operational
+   phrasing or service family.
+4. Retrieval still depends on the local LM Studio embedding endpoint, while
+   accepted generation depends on the local Gemma model.

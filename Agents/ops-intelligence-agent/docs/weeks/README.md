@@ -16,7 +16,7 @@ Use them to:
 | [Week 03](week-03-advanced-rag.md) | Normalization, expansion, metadata, fallback, and reranking | Complete locally |
 | [Week 04](week-04-architecture-decisions.md) | Retrieval evaluation and architecture decisions | Complete locally |
 | [Week 05](week-05-tool-calling.md) | Hybrid retrieval and evidence acceptance | Complete locally |
-| [Week 06](week-06-evaluation-engineering.md) | Pipeline evaluation contracts, dataset splits, and stage metrics | In progress |
+| [Week 06](week-06-evaluation-engineering.md) | Pipeline evaluation contracts, adaptive retrieval, and safe LLM routing | Complete locally |
 | [Week 07](week-07-agent-specialization.md) | Agent specialization only if justified | Planned |
 | [Week 08](week-08-incident-memory.md) | Similar-incident memory | Planned |
 | [Week 09](week-09-mcp-server.md) | MCP server | Planned |

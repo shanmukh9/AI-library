@@ -1,6 +1,6 @@
 # Ops Intelligence Agent
 
-An applied AI learning project for CloudOps alert analysis. The current Week 1 baseline sends synthetic operational alerts to a local Gemma model through LM Studio, parses the structured JSON response, and compares predicted severity with a synthetic expected label.
+An applied AI learning project for operational alert analysis. The current local pipeline combines a deterministic incident signal gate, vector and BM25 Hybrid RRF retrieval, adaptive source recovery, evidence acceptance, and structured local Gemma generation. Python prevents LLM calls for `no_incident`, `no_coverage`, and `clarify` decisions.
 
 ## Weekly Build Notes
 
@@ -23,7 +23,7 @@ fallback, reranking, and the grounded LLM chain.
 - Week 3: advanced RAG complete locally.
 - Week 4: retrieval evaluation and architecture decisions complete locally.
 - Week 5: hybrid retrieval and evidence acceptance complete locally.
-- Week 6: pipeline evaluation engineering in progress.
+- Week 6: pipeline evaluation engineering and adaptive main-chain routing complete locally.
 
 ## Week 1 Baseline
 
@@ -693,3 +693,57 @@ Raw signal gate:       6/6
 Hybrid entry gate:     6/6
 Acceptance decisions:  4/4
 ```
+
+## Week 6 Pipeline Evaluation Engineering
+
+Week 6 turns the retrieval experiments into a stage-level evaluation contract
+and promotes adaptive retrieval into the local main chain:
+
+```text
+alert
+  -> shared asserted-signal semantics
+  -> Hybrid RRF chunk retrieval
+  -> adaptive source retry only when a credible multi-source query is missing
+     a detected source
+  -> evidence acceptance
+  -> accept: local Gemma structured analysis
+  -> no_incident / no_coverage / clarify: deterministic response, no LLM call
+```
+
+The frozen local configuration is `top_k=3`, `candidate_k=5`, and
+`ranking_mode=adaptive`. Adaptive retry searches a deeper candidate pool only
+when the precise first pass misses a supported source that is actively asserted
+in a multi-source alert.
+
+Final measured results on synthetic local cases:
+
+| Split | Required-source coverage | Candidate-source precision | Final routing |
+| --- | ---: | ---: | ---: |
+| Development | 100% | 68.4% | 17/17 |
+| Validation | 100% | 100% | 2/2 |
+| Fresh held-out | 100% | 75% | 4/4 |
+
+The fresh held-out run produced zero unsafe LLM calls. These measurements show
+the behavior of this small local suite; they are not a production accuracy
+claim.
+
+Run the repeatable contract and regression checks:
+
+```powershell
+python .\validate_pipeline_cases.py
+python .\evaluate_signal_gate_coverage.py
+python .\evaluate_adversarial_acceptance.py
+python .\evaluate_pipeline.py --split development --top-k 3 --candidate-k 5 --ranking-mode adaptive
+python .\evaluate_pipeline.py --split validation --top-k 3 --candidate-k 5 --ranking-mode adaptive
+python .\evaluate_main_chain_routing.py
+```
+
+The held-out set was opened once after freezing the configuration. It should
+not be repeatedly used for tuning; any inspected failure must move into the
+development regression set before a new held-out round is designed.
+
+`basic_chain.py` exposes a retrieval trace containing the requested and
+resolved ranking modes, adaptive retry usage, detected sources, missing sources
+before retry, candidate sources, accepted sources, and final acceptance
+decision. This makes routing behavior explainable without exposing model
+reasoning text.

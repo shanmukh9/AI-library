@@ -1,270 +1,324 @@
 [
-  {
-    "id": "healthy_database_no_incident",
-    "split": "development",
-    "query": "Database connections are healthy and not exhausted.",
-    "expected": {
-      "retrieval_should_run": false,
-      "expected_candidate_sources": [],
-      "decision": "no_incident",
-      "accepted_sources": [],
-      "llm_should_run": false
+    {
+        "id": "healthy_database_no_incident",
+        "split": "development",
+        "query": "Database connections are healthy and not exhausted.",
+        "expected": {
+            "retrieval_should_run": false,
+            "expected_candidate_sources": [],
+            "decision": "no_incident",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "lambda_timeout_supported",
+        "split": "development",
+        "query": "Payment Lambda timed out after 15 seconds.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "lambda-timeout.md"
+            ],
+            "decision": "accept",
+            "accepted_sources": [
+                "lambda-timeout.md"
+            ],
+            "llm_should_run": true
+        }
+    },
+    {
+        "id": "conflicting_lambda_iam",
+        "split": "development",
+        "query": "Lambda timed out and logs show AccessDenied.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "lambda-timeout.md",
+                "iam-accessdenied.md"
+            ],
+            "decision": "clarify",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "dynamodb_throttling_unsupported",
+        "split": "development",
+        "query": "DynamoDB requests are being throttled after deployment.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [],
+            "decision": "no_coverage",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "kubernetes_oom_after_deployment",
+        "split": "validation",
+        "query": "Kubernetes pod was OOMKilled after deployment and its restart count keeps increasing.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "kubernetes-oomkill.md"
+            ],
+            "decision": "accept",
+            "accepted_sources": [
+                "kubernetes-oomkill.md"
+            ],
+            "llm_should_run": true
+        }
+    },
+    {
+        "id": "conflicting_ssl_iam",
+        "split": "validation",
+        "query": "TLS certificate expires tomorrow, and renewal logs show AccessDenied for the IAM role.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "ssl-certificate-expiry.md",
+                "iam-accessdenied.md"
+            ],
+            "decision": "clarify",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "rds_pool_exhaustion_regression",
+        "split": "development",
+        "query": "RDS connections reached the configured maximum, and checkout requests are failing.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "rds-connection-pool.md"
+            ],
+            "decision": "accept",
+            "accepted_sources": [
+                "rds-connection-pool.md"
+            ],
+            "llm_should_run": true
+        }
+    },
+    {
+        "id": "conflicting_rds_iam_regression",
+        "split": "development",
+        "query": "RDS connections reached their maximum, and database logs also show AccessDenied.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "rds-connection-pool.md",
+                "iam-accessdenied.md"
+            ],
+            "decision": "clarify",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "dynamodb_throttling_regression",
+        "split": "development",
+        "query": "DynamoDB write requests are being throttled after traffic increased.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [],
+            "decision": "no_coverage",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "healthy_dynamodb_regression",
+        "split": "development",
+        "query": "DynamoDB traffic is healthy and no requests are being throttled.",
+        "expected": {
+            "retrieval_should_run": false,
+            "expected_candidate_sources": [],
+            "decision": "no_incident",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "lambda_timeout_negated_iam",
+        "split": "development",
+        "query": "Lambda timed out, but logs confirm it was not AccessDenied.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "lambda-timeout.md"
+            ],
+            "decision": "accept",
+            "accepted_sources": [
+                "lambda-timeout.md"
+            ],
+            "llm_should_run": true
+        }
+    },
+    {
+        "id": "conflicting_alb502_kubernetes_development",
+        "split": "development",
+        "query": "Checkout requests return HTTP 502, and the backend pod was OOMKilled after deployment.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "alb-502-health-checks.md",
+                "kubernetes-oomkill.md"
+            ],
+            "decision": "clarify",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "http504_upstream_latency_development",
+        "split": "development",
+        "query": "Checkout gateway returns HTTP 504 while upstream responses exceed 30 seconds.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "http-504-gateway-timeout.md"
+            ],
+            "decision": "accept",
+            "accepted_sources": [
+                "http-504-gateway-timeout.md"
+            ],
+            "llm_should_run": true
+        }
+    },
+    {
+        "id": "redis_timeout_no_coverage_development",
+        "split": "development",
+        "query": "Redis cache requests are timing out after failover, and cache latency keeps increasing.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [],
+            "decision": "no_coverage",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "healthy_redis_no_incident_development",
+        "split": "development",
+        "query": "Redis cache is healthy; no requests are timing out, and latency is normal.",
+        "expected": {
+            "retrieval_should_run": false,
+            "expected_candidate_sources": [],
+            "decision": "no_incident",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "stable_latency_ssl_expiry_development",
+        "split": "development",
+        "query": "API latency remains stable, but its TLS certificate expires tomorrow.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "ssl-certificate-expiry.md"
+            ],
+            "decision": "accept",
+            "accepted_sources": [
+                "ssl-certificate-expiry.md"
+            ],
+            "llm_should_run": true
+        }
+    },
+    {
+        "id": "conflicting_rds_ssl_development",
+        "split": "development",
+        "query": "Database connections are exhausted, and the service TLS certificate expires tomorrow.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "rds-connection-pool.md",
+                "ssl-certificate-expiry.md"
+            ],
+            "decision": "clarify",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "elasticsearch_red_cluster_development",
+        "split": "development",
+        "query": "Elasticsearch shard allocation failed after a node restart, and the cluster remains red.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [],
+            "decision": "no_coverage",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "healthy_api_metrics_development",
+        "split": "development",
+        "query": "API error rate is normal, latency remains stable, and no requests are failing.",
+        "expected": {
+            "retrieval_should_run": false,
+            "expected_candidate_sources": [],
+            "decision": "no_incident",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "alb_healthcheck_502_final_held_out",
+        "split": "held_out",
+        "query": "ALB target health checks for checkout-service failed after deployment, and clients receive HTTP 502.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "alb-502-health-checks.md"
+            ],
+            "decision": "accept",
+            "accepted_sources": [
+                "alb-502-health-checks.md"
+            ],
+            "llm_should_run": true
+        }
+    },
+    {
+        "id": "conflicting_rds_504_final_held_out",
+        "split": "held_out",
+        "query": "Checkout requests return HTTP 504 while RDS connections are exhausted.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [
+                "http-504-gateway-timeout.md",
+                "rds-connection-pool.md"
+            ],
+            "decision": "clarify",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "ec2_disk_failure_no_coverage_final_held_out",
+        "split": "held_out",
+        "query": "EC2 instance disk usage exceeded 95%, and application writes are failing after deployment.",
+        "expected": {
+            "retrieval_should_run": true,
+            "expected_candidate_sources": [],
+            "decision": "no_coverage",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
+    },
+    {
+        "id": "healthy_lambda_metrics_final_held_out",
+        "split": "held_out",
+        "query": "Lambda timeout rate is normal, no invocations failed, and CPU usage remains stable after deployment.",
+        "expected": {
+            "retrieval_should_run": false,
+            "expected_candidate_sources": [],
+            "decision": "no_incident",
+            "accepted_sources": [],
+            "llm_should_run": false
+        }
     }
-  },
-  {
-    "id": "lambda_timeout_supported",
-    "split": "development",
-    "query": "Payment Lambda timed out after 15 seconds.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [
-        "lambda-timeout.md"
-      ],
-      "decision": "accept",
-      "accepted_sources": [
-        "lambda-timeout.md"
-      ],
-      "llm_should_run": true
-    }
-  },
-  {
-    "id": "conflicting_lambda_iam",
-    "split": "development",
-    "query": "Lambda timed out and logs show AccessDenied.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [
-        "lambda-timeout.md",
-        "iam-accessdenied.md"
-      ],
-      "decision": "clarify",
-      "accepted_sources": [],
-      "llm_should_run": false
-    }
-  },
-  {
-    "id": "dynamodb_throttling_unsupported",
-    "split": "development",
-    "query": "DynamoDB requests are being throttled after deployment.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [],
-      "decision": "no_coverage",
-      "accepted_sources": [],
-      "llm_should_run": false
-    }
-  },
-  {
-    "id": "kubernetes_oom_after_deployment",
-    "split": "validation",
-    "query": "Kubernetes pod was OOMKilled after deployment and its restart count keeps increasing.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [
-        "kubernetes-oomkill.md"
-      ],
-      "decision": "accept",
-      "accepted_sources": [
-        "kubernetes-oomkill.md"
-      ],
-      "llm_should_run": true
-    }
-  },
-  {
-    "id": "conflicting_ssl_iam",
-    "split": "validation",
-    "query": "TLS certificate expires tomorrow, and renewal logs show AccessDenied for the IAM role.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [
-        "ssl-certificate-expiry.md",
-        "iam-accessdenied.md"
-      ],
-      "decision": "clarify",
-      "accepted_sources": [],
-      "llm_should_run": false
-    }
-  },
-  {
-    "id": "rds_pool_exhaustion_regression",
-    "split": "development",
-    "query": "RDS connections reached the configured maximum, and checkout requests are failing.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [
-        "rds-connection-pool.md"
-      ],
-      "decision": "accept",
-      "accepted_sources": [
-        "rds-connection-pool.md"
-      ],
-      "llm_should_run": true
-    }
-  },
-  {
-    "id": "conflicting_rds_iam_regression",
-    "split": "development",
-    "query": "RDS connections reached their maximum, and database logs also show AccessDenied.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [
-        "rds-connection-pool.md",
-        "iam-accessdenied.md"
-      ],
-      "decision": "clarify",
-      "accepted_sources": [],
-      "llm_should_run": false
-    }
-  },
-  {
-    "id": "dynamodb_throttling_regression",
-    "split": "development",
-    "query": "DynamoDB write requests are being throttled after traffic increased.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [],
-      "decision": "no_coverage",
-      "accepted_sources": [],
-      "llm_should_run": false
-    }
-  },
-  {
-    "id": "healthy_dynamodb_regression",
-    "split": "development",
-    "query": "DynamoDB traffic is healthy and no requests are being throttled.",
-    "expected": {
-      "retrieval_should_run": false,
-      "expected_candidate_sources": [],
-      "decision": "no_incident",
-      "accepted_sources": [],
-      "llm_should_run": false
-    }
-  },
-  {
-    "id": "lambda_timeout_negated_iam",
-    "split": "development",
-    "query": "Lambda timed out, but logs confirm it was not AccessDenied.",
-    "expected": {
-      "retrieval_should_run": true,
-      "expected_candidate_sources": [
-        "lambda-timeout.md"
-      ],
-      "decision": "accept",
-      "accepted_sources": [
-        "lambda-timeout.md"
-      ],
-      "llm_should_run": true
-    }
-  },
-  {
-  "id": "conflicting_alb502_kubernetes_development",
-  "split": "development",
-  "query": "Checkout requests return HTTP 502, and the backend pod was OOMKilled after deployment.",
-  "expected": {
-    "retrieval_should_run": true,
-    "expected_candidate_sources": [
-      "alb-502-health-checks.md",
-      "kubernetes-oomkill.md"
-    ],
-    "decision": "clarify",
-    "accepted_sources": [],
-    "llm_should_run": false
-  }
-},
-{
-  "id": "http504_upstream_latency_development",
-  "split": "development",
-  "query": "Checkout gateway returns HTTP 504 while upstream responses exceed 30 seconds.",
-  "expected": {
-    "retrieval_should_run": true,
-    "expected_candidate_sources": [
-      "http-504-gateway-timeout.md"
-    ],
-    "decision": "accept",
-    "accepted_sources": [
-      "http-504-gateway-timeout.md"
-    ],
-    "llm_should_run": true
-  }
-},
-{
-  "id": "redis_timeout_no_coverage_development",
-  "split": "development",
-  "query": "Redis cache requests are timing out after failover, and cache latency keeps increasing.",
-  "expected": {
-    "retrieval_should_run": true,
-    "expected_candidate_sources": [],
-    "decision": "no_coverage",
-    "accepted_sources": [],
-    "llm_should_run": false
-  }
-},
-{
-  "id": "healthy_redis_no_incident_development",
-  "split": "development",
-  "query": "Redis cache is healthy; no requests are timing out, and latency is normal.",
-  "expected": {
-    "retrieval_should_run": false,
-    "expected_candidate_sources": [],
-    "decision": "no_incident",
-    "accepted_sources": [],
-    "llm_should_run": false
-  }
-},
-{
-  "id": "stable_latency_ssl_expiry_development",
-  "split": "development",
-  "query": "API latency remains stable, but its TLS certificate expires tomorrow.",
-  "expected": {
-    "retrieval_should_run": true,
-    "expected_candidate_sources": [
-      "ssl-certificate-expiry.md"
-    ],
-    "decision": "accept",
-    "accepted_sources": [
-      "ssl-certificate-expiry.md"
-    ],
-    "llm_should_run": true
-  }
-},
-{
-  "id": "conflicting_rds_ssl_development",
-  "split": "development",
-  "query": "Database connections are exhausted, and the service TLS certificate expires tomorrow.",
-  "expected": {
-    "retrieval_should_run": true,
-    "expected_candidate_sources": [
-      "rds-connection-pool.md",
-      "ssl-certificate-expiry.md"
-    ],
-    "decision": "clarify",
-    "accepted_sources": [],
-    "llm_should_run": false
-  }
-},
-{
-  "id": "elasticsearch_red_cluster_development",
-  "split": "development",
-  "query": "Elasticsearch shard allocation failed after a node restart, and the cluster remains red.",
-  "expected": {
-    "retrieval_should_run": true,
-    "expected_candidate_sources": [],
-    "decision": "no_coverage",
-    "accepted_sources": [],
-    "llm_should_run": false
-  }
-},
-{
-  "id": "healthy_api_metrics_development",
-  "split": "development",
-  "query": "API error rate is normal, latency remains stable, and no requests are failing.",
-  "expected": {
-    "retrieval_should_run": false,
-    "expected_candidate_sources": [],
-    "decision": "no_incident",
-    "accepted_sources": [],
-    "llm_should_run": false
-  }
-}
-
 ]

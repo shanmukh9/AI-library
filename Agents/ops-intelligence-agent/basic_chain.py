@@ -2,7 +2,7 @@ import json
 import urllib.error
 import urllib.request
 
-from evidence_acceptance import assess_evidence
+from evidence_acceptance import assess_evidence, detect_supported_incident_sources
 from hybrid_retriever import (
     format_hybrid_evidence,
     hybrid_search_rrf,
@@ -12,6 +12,9 @@ from hybrid_retriever import (
 
 CHAT_COMPLETIONS_URL = "http://127.0.0.1:1234/v1/chat/completions"
 CHAT_MODEL = "google/gemma-4-e4b"
+RETRIEVAL_TOP_K = 3
+RETRIEVAL_CANDIDATE_K = 5
+RETRIEVAL_RANKING_MODE = "adaptive"
 ALERT_ANALYSIS_SCHEMA = {
     "type": "object",
     "properties": {
@@ -107,7 +110,42 @@ Respond ONLY with valid JSON:
 Note: model_confidence is your qualitative opinion only. It is not calibrated probability."""
 
 
-def build_non_analysis_response(assessment):
+def build_retrieval_trace(query, candidates, assessment, *, retrieval_ran):
+    candidate_sources = list(
+        dict.fromkeys(candidate["source"] for candidate in candidates)
+    )
+    accepted_sources = list(
+        dict.fromkeys(
+            evidence["source"] for evidence in assessment.get("evidence", [])
+        )
+    )
+    first_candidate = candidates[0] if candidates else {}
+    return {
+        "requested_ranking_mode": RETRIEVAL_RANKING_MODE,
+        "resolved_ranking_mode": first_candidate.get(
+            "resolved_ranking_mode",
+            "chunk" if retrieval_ran else "not_run",
+        ),
+        "adaptive_retry_used": first_candidate.get(
+            "adaptive_retry_used",
+            False,
+        ),
+        "detected_sources": detect_supported_incident_sources(query),
+        "initial_sources": first_candidate.get(
+            "adaptive_initial_sources",
+            candidate_sources,
+        ),
+        "missing_sources_before_retry": first_candidate.get(
+            "adaptive_missing_sources",
+            [],
+        ),
+        "candidate_sources": candidate_sources,
+        "accepted_sources": accepted_sources,
+        "decision": assessment["decision"],
+    }
+
+
+def build_non_analysis_response(assessment, retrieval_trace):
     status_by_decision = {
         "clarify": "clarification_required",
         "no_coverage": "no_coverage",
@@ -120,10 +158,15 @@ def build_non_analysis_response(assessment):
         "clarifying_question": assessment["clarifying_question"],
         "analysis": None,
         "escalation_required": assessment["decision"] == "no_coverage",
+        "retrieval": retrieval_trace,
     }
 
 
-def build_no_incident_response():
+def build_no_incident_response(query):
+    assessment = {
+        "decision": "no_incident",
+        "evidence": [],
+    }
     return {
         "status": "no_incident",
         "grounding": "none",
@@ -132,17 +175,25 @@ def build_no_incident_response():
         "clarifying_question": None,
         "analysis": None,
         "escalation_required": False,
+        "retrieval": build_retrieval_trace(
+            query,
+            [],
+            assessment,
+            retrieval_ran=False,
+        ),
     }
 
 
 def analyze_alert(alert):
     try:
         if not should_run_hybrid_retrieval(alert["text"]):
-            return build_no_incident_response()
+            return build_no_incident_response(alert["text"])
 
         raw_candidates = hybrid_search_rrf(
             alert["text"],
-            top_k=3,
+            top_k=RETRIEVAL_TOP_K,
+            candidate_k=RETRIEVAL_CANDIDATE_K,
+            ranking_mode=RETRIEVAL_RANKING_MODE,
         )
     except (FileNotFoundError, RuntimeError) as exc:
         return {
@@ -153,11 +204,18 @@ def analyze_alert(alert):
             "clarifying_question": None,
             "analysis": None,
             "escalation_required": True,
+            "retrieval": None,
         }
 
     assessment = assess_evidence(alert["text"], raw_candidates)
+    retrieval_trace = build_retrieval_trace(
+        alert["text"],
+        raw_candidates,
+        assessment,
+        retrieval_ran=True,
+    )
     if assessment["decision"] != "accept":
-        return build_non_analysis_response(assessment)
+        return build_non_analysis_response(assessment, retrieval_trace)
 
     retrieved_evidence = assessment["evidence"]
     evidence_text = format_hybrid_evidence(retrieved_evidence)
@@ -190,6 +248,7 @@ def analyze_alert(alert):
             "analysis": None,
             "escalation_required": True,
             "evidence": retrieved_evidence,
+            "retrieval": retrieval_trace,
         }
     return {
         "status": "analysis_ready",
@@ -200,6 +259,7 @@ def analyze_alert(alert):
         "analysis": analysis,
         "escalation_required": False,
         "evidence": retrieved_evidence,
+        "retrieval": retrieval_trace,
     }
 
 
@@ -210,6 +270,25 @@ def main():
         print(f"\nAlert: {alert['text'][:60]}...")
         print(f"Status: {result['status']} | Grounding: {result['grounding']}")
         print(f"Gate reason: {result['reason']}")
+        retrieval = result.get("retrieval")
+        if retrieval:
+            print(
+                "Retrieval: "
+                f"requested={retrieval['requested_ranking_mode']}, "
+                f"resolved={retrieval['resolved_ranking_mode']}, "
+                f"retry={retrieval['adaptive_retry_used']}"
+            )
+            print(
+                "Sources: "
+                f"detected={retrieval['detected_sources']}, "
+                f"candidates={retrieval['candidate_sources']}, "
+                f"accepted={retrieval['accepted_sources']}"
+            )
+            if retrieval["missing_sources_before_retry"]:
+                print(
+                    "Missing before retry: "
+                    f"{retrieval['missing_sources_before_retry']}"
+                )
 
         if result["status"] == "analysis_ready":
             top = result["evidence"][0]

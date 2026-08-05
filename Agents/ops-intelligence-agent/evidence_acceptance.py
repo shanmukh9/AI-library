@@ -1,5 +1,3 @@
-import re
-
 from runbook_rag import (
     contains_asserted_signal,
     normalize_operational_signals,
@@ -73,20 +71,6 @@ INCIDENT_PROFILES = {
         "clarifying_question": "What denied action, resource, and principal appear in the error?",
     },
 }
-
-
-
-
-
-
-def contains_signal(text, signal):
-    pattern = rf"(?<![a-z0-9]){re.escape(signal)}(?![a-z0-9])"
-
-    for match in re.finditer(pattern, text, flags=re.IGNORECASE):
-        if not is_signal_negated(text, match.start()):
-            return True
-
-    return False
 
 
 def matching_signals(query, signals):
