@@ -12,9 +12,11 @@ Start with the [Week 1 retrospective](docs/weeks/week-01-llm-foundations.md).
 
 Open the [OIA Visual Operating System](docs/visuals/week2-rag-motion.html)
 in a browser to move week by week through the project. It currently visualizes
-the Week 1 LLM baseline, Week 2 Runbook RAG layer, and complete Week 3
-advanced-retrieval pipeline, including normalization, expansion, metadata,
-fallback, reranking, and the grounded LLM chain.
+Weeks 1-6, from the local LLM baseline and Runbook RAG through advanced
+retrieval, Hybrid RRF, evidence acceptance, evaluation contracts, adaptive
+source recovery, and safe LLM routing. Each completed week includes animated
+architecture steps, worked examples, learning checkpoints, measured evidence,
+and an interview-ready recap.
 
 ## Current Status
 

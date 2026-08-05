@@ -1427,7 +1427,7 @@
         <p class="subtitle">A single weekly review surface for what was built, what was learned, how the system works, and how to explain it later.</p>
       </div>
       <div class="status-panel">
-        <strong id="globalStatus">5 weeks online</strong>
+        <strong id="globalStatus">6 weeks online</strong>
         <span>Target role: AI Systems Engineer for AIOps</span>
       </div>
     </header>
@@ -1492,14 +1492,14 @@
 
     <footer class="footer">
       <button class="nav-btn" id="prevBtn" type="button">Previous week</button>
-      <span id="footerCounter">Week 5 of 12</span>
+      <span id="footerCounter">Week 6 of 12</span>
       <button class="nav-btn" id="replayBtn" type="button">Replay flow</button>
       <button class="nav-btn" id="nextBtn" type="button">Next week</button>
     </footer>
   </main>
 
   <script>
-    const completedUntil = 5;
+    const completedUntil = 6;
 
     const weeks = [
       {
@@ -1625,7 +1625,34 @@
         talking: "I added BM25 for exact operational tokens and fused it with semantic retrieval using RRF because raw scores are not comparable. Then I tested adversarial inputs. Both retrievers now share one polarity-aware entry gate, expansion cannot turn a negated signal into a positive incident, and conflicting sources produce the same clarification regardless of rank order. Python decides whether the result is no_incident, accept, clarify, or no_coverage before Gemma can analyze it.",
         nodes: ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "incident-output", "embedding", "vector-search", "bm25-search", "min-score", "reranker", "rrf-fusion", "acceptance-gate", "clarification-output", "coverage-output", "runbook-context", "chat-model", "python-contract", "json-output"]
       },
-      {n:6, phase:"Agent Core", title:"LangGraph and Human Approval", status:"Planned", concept:"Represent incident analysis as a stateful workflow with human approval before risky actions.", built:["state graph", "approval gate"], metrics:["Risky actions blocked"], talking:"Human-in-the-loop checkpoints protect production systems.", nodes:["langgraph", "human-gate"]},
+      {
+        n: 6,
+        phase: "Production RAG",
+        title: "Evaluation Contracts, Adaptive Retrieval, and Safe LLM Routing",
+        status: "Complete",
+        concept: "Week 6 turns the pipeline into a measurable engineering system. Development cases expose failures, validation cases choose configurations, and a fresh held-out set tests the frozen design once. Precise chunk retrieval runs first; only a credible multi-source alert missing a detected source triggers a deeper source-level retry. Evidence acceptance still owns trust, and only accept can call Gemma.",
+        built: [
+          "evals/pipeline_cases.json - stage-level expected behavior contract",
+          "validate_pipeline_cases.py - schema and split validation",
+          "evaluate_pipeline.py - gate, retrieval, acceptance, and LLM-routing metrics",
+          "shared asserted-signal semantics - negation and healthy-state handling",
+          "hybrid_retriever.py - adaptive missing-source recovery",
+          "basic_chain.py - adaptive mode plus explainable routing trace",
+          "evaluate_main_chain_routing.py - deterministic permission smoke test"
+        ],
+        metrics: [
+          "Data contract: 23 cases",
+          "Signal gate: 17/17",
+          "Development routing: 17/17",
+          "Validation routing: 2/2",
+          "Fresh held-out routing: 4/4",
+          "Held-out source coverage: 100%",
+          "Held-out candidate precision: 75%",
+          "Main-chain smoke: 5/5; unsafe LLM calls: 0"
+        ],
+        talking: "I converted the RAG pipeline from a collection of demos into a stage-level evaluation contract. I separated development, validation, and held-out cases; measured source coverage and candidate precision independently; introduced adaptive retry only for missing sources in credible multi-incident queries; centralized signal semantics across gates; and proved that only accepted evidence reaches the local LLM. The remaining limitation is candidate noise on a small synthetic dataset, so I report the measurements without claiming production accuracy.",
+        nodes: ["alert-input", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "rrf-fusion", "adaptive-router", "adaptive-retry", "final-top3", "acceptance-gate", "llm-router", "incident-output", "clarification-output", "coverage-output", "runbook-context", "chat-model", "python-contract", "routing-trace", "data-contract", "dataset-splits", "pipeline-eval"]
+      },
       {n:7, phase:"Agent Core", title:"Agent Specialization", status:"Planned", concept:"Split responsibilities only if evals prove specialization helps.", built:["triage/retrieval/remediation separation"], metrics:["Quality vs latency tradeoff"], talking:"Multi-agent design must be justified by measurable value.", nodes:["multi-agent"]},
       {n:8, phase:"Memory + Context", title:"Incident Memory", status:"Planned", concept:"Use prior incidents as bounded memory without overloading the prompt.", built:["incident memory store", "history retrieval"], metrics:["similar incident hit rate"], talking:"Memory is useful only when it is bounded and relevant.", nodes:["memory"]},
       {n:9, phase:"Memory + Context", title:"MCP Interface", status:"Planned", concept:"Expose capabilities through a standardized tool interface.", built:["sample MCP server", "tools/list and tools/call"], metrics:["tool response checks"], talking:"MCP turns local capability into reusable integration surface.", nodes:["mcp"]},
@@ -1647,6 +1674,8 @@
       {id:"min-score", phase:"Retrieval Guardrails", label:"min_score Filter", sub:"Drops weak chunks below 0.60", week:2, icon:"MS"},
       {id:"reranker", phase:"Advanced RAG", label:"Intent-Aware Reranker", sub:"Cause/action/symptom ordering bonuses", week:3, icon:"RR"},
       {id:"rrf-fusion", phase:"Advanced RAG", label:"Reciprocal Rank Fusion", sub:"Merges vector and BM25 ranks", week:5, icon:"RF"},
+      {id:"adaptive-router", phase:"Retrieval Control", label:"Adaptive Source Check", sub:"Compare active supported sources with initial candidates", week:6, icon:"AR"},
+      {id:"adaptive-retry", phase:"Retrieval Control", label:"Conditional Source Retry", sub:"Search deeper only when a credible source is missing", week:6, icon:"SR"},
       {id:"final-top3", phase:"Advanced RAG", label:"Ranked Candidates", sub:"Top evidence candidates, not yet trusted", week:3, icon:"T3"},
       {id:"failure-diagnosis", phase:"Evidence Validation", label:"Failure-Stage Diagnosis", sub:"Gate, coverage, retrieval, ranking, or LLM", week:4, icon:"DX"},
       {id:"knowledge-coverage", phase:"Evidence Validation", label:"Knowledge Coverage", sub:"Missing incident family requires a runbook", week:4, icon:"KC"},
@@ -1654,6 +1683,7 @@
       {id:"incident-output", phase:"Decision Branch", label:"No Incident", sub:"Healthy or fully negated input; skip retrieval and LLM", week:5, icon:"NI"},
       {id:"clarification-output", phase:"Decision Branch", label:"Clarification Required", sub:"Ask for missing incident detail; skip LLM", week:5, icon:"?"},
       {id:"coverage-output", phase:"Decision Branch", label:"No Coverage", sub:"Escalate safely; skip LLM", week:5, icon:"NC"},
+      {id:"llm-router", phase:"Decision Branch", label:"LLM Permission Router", sub:"Only accept may invoke local Gemma", week:6, icon:"GO"},
       {id:"runbook-context", phase:"Context", label:"Runbook Evidence", sub:"Grounded chunks enter prompt", week:2, icon:"RB"},
       {id:"chat-model", phase:"Generation", label:"Local Gemma Chat Model", sub:"Generates structured analysis", week:1, icon:"GM"},
       {id:"severity-policy", phase:"Generation", label:"Severity Policy", sub:"Maps evidence to P1/P2/P3", week:2, icon:"P1"},
@@ -1661,10 +1691,10 @@
       {id:"json-parser", phase:"Output", label:"JSON Parser", sub:"Cleans and loads model text", week:1, icon:"{}"},
       {id:"json-output", phase:"Output", label:"Structured JSON Output", sub:"Root cause, severity, action", week:1, icon:"JS"},
       {id:"retrieval-eval", phase:"Evaluation", label:"Retrieval Eval Suite", sub:"Positive, negative, stage, and regression checks", week:4, icon:"EV"},
-      {id:"tool-schema", phase:"Agent Core", label:"Typed Tool Schema", sub:"Future strict actions", week:6, icon:"TS"},
-      {id:"tools", phase:"Agent Core", label:"Tool Connectors", sub:"Future Jira/cloud hooks", week:6, icon:"TL"},
-      {id:"langgraph", phase:"Agent Core", label:"State Graph", sub:"Future workflow routing", week:6, icon:"LG"},
-      {id:"human-gate", phase:"Agent Core", label:"Human Approval", sub:"Future risky-action checkpoint", week:6, icon:"HG"},
+      {id:"data-contract", phase:"Evaluation", label:"Evaluation Data Contract", sub:"Expected stage behavior for every scenario", week:6, icon:"DC"},
+      {id:"dataset-splits", phase:"Evaluation", label:"Development / Validation / Held-out", sub:"Build, choose, then prove without leakage", week:6, icon:"SP"},
+      {id:"pipeline-eval", phase:"Evaluation", label:"Stage-Level Pipeline Eval", sub:"Measure gate, coverage, precision, decision, and routing", week:6, icon:"PE"},
+      {id:"routing-trace", phase:"Observability", label:"Retrieval Routing Trace", sub:"Show mode, retry, candidates, acceptance, and model permission", week:6, icon:"TR"},
       {id:"multi-agent", phase:"Agent Core", label:"Specialized Agents", sub:"Future only if justified", week:7, icon:"MA"},
       {id:"memory", phase:"Memory", label:"Incident Memory", sub:"Future similar incident search", week:8, icon:"DB"},
       {id:"mcp", phase:"Integration", label:"MCP Server", sub:"Future standard interface", week:9, icon:"MP"},
@@ -1686,6 +1716,9 @@
     const hybridClarifyFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "clarification-output", "python-contract"];
     const hybridConflictFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "clarification-output", "python-contract"];
     const hybridNoCoverageFlow = ["alert-input", "query-rewriter", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "min-score", "rrf-fusion", "final-top3", "acceptance-gate", "coverage-output", "python-contract"];
+    const week6AcceptedFlow = ["alert-input", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "rrf-fusion", "adaptive-router", "final-top3", "acceptance-gate", "llm-router", "runbook-context", "chat-model", "python-contract", "routing-trace", "pipeline-eval"];
+    const week6AdaptiveFlow = ["alert-input", "signal-normalizer", "signal-gate", "embedding", "vector-search", "bm25-search", "rrf-fusion", "adaptive-router", "adaptive-retry", "final-top3", "acceptance-gate", "clarification-output", "llm-router", "python-contract", "routing-trace", "pipeline-eval"];
+    const week6EvaluationFlow = ["data-contract", "dataset-splits", "pipeline-eval", "routing-trace"];
 
     const nodeLessons = {
       "alert-input": {
@@ -1740,6 +1773,14 @@
         body: "Reciprocal Rank Fusion combines vector and BM25 positions without adding their incomparable raw scores.",
         memory: "RRF combines ranks, not confidence."
       },
+      "adaptive-router": {
+        body: "The precise chunk-ranked result is compared with supported incident sources actively asserted in the alert. A retry is considered only when two or more credible sources exist and one is missing.",
+        memory: "Adaptive means widen conditionally, not search broadly every time."
+      },
+      "adaptive-retry": {
+        body: "A deeper source-level search runs only for the missing-source case, then returns candidates to the same evidence acceptance gate.",
+        memory: "Retry recovers recall; it does not grant trust."
+      },
       "final-top3": {
         body: "The strongest ranked candidates form a shortlist. They still need validation before becoming LLM context.",
         memory: "Best available does not automatically mean relevant enough."
@@ -1763,6 +1804,10 @@
       "coverage-output": {
         body: "No supported runbook aligns with the incident family, so the system exposes the gap and requires escalation.",
         memory: "No coverage means no speculative RCA or remediation."
+      },
+      "llm-router": {
+        body: "Python permits the local model call only when evidence acceptance returns accept. No incident, no coverage, and clarification paths remain deterministic.",
+        memory: "The LLM is a permitted destination, never the default destination."
       },
       "runbook-context": {
         body: "Only evidence approved by the acceptance gate is formatted and inserted into the model context window.",
@@ -1791,6 +1836,22 @@
       "retrieval-eval": {
         body: "Positive, negative, failure-stage, and regression cases measure both retrieval ability and safe rejection.",
         memory: "A perfect positive score can still hide dangerous false positives."
+      },
+      "data-contract": {
+        body: "Each scenario declares whether retrieval should run, which sources must appear, the expected acceptance decision, accepted sources, and whether the LLM may run.",
+        memory: "An eval is strongest when expected behavior is explicit before execution."
+      },
+      "dataset-splits": {
+        body: "Development cases guide fixes, validation cases compare configurations, and a fresh held-out set tests the frozen design once.",
+        memory: "Development builds. Validation chooses. Held-out proves."
+      },
+      "pipeline-eval": {
+        body: "The evaluator reports signal-gate errors, required-source coverage, candidate precision, acceptance decisions, accepted sources, and LLM-routing accuracy separately.",
+        memory: "One end-to-end score hides which stage failed."
+      },
+      "routing-trace": {
+        body: "Every main-chain result records requested and resolved ranking modes, retry usage, detected and candidate sources, accepted sources, and the final decision.",
+        memory: "Observe decisions and evidence lineage without exposing hidden model reasoning."
       }
     };
 
@@ -1985,6 +2046,55 @@
         contract: "status=no_coverage; grounded=false; LLM skipped",
         json: "Escalate and add a Kafka consumer-lag runbook before analysis",
         evaluation: "Negative evaluation succeeds only when this false positive is rejected"
+      },
+      "6:accepted": {
+        query: "ALB target health checks failed after deployment and clients receive HTTP 502",
+        normalized: "alb target health checks failed deployment http 502",
+        gate: "PASS - failed health checks and HTTP 502 are asserted operational signals",
+        embedding: "Semantic vector captures load-balancer availability failure",
+        vector: "ALB 502 runbook ranks first in semantic retrieval",
+        lexical: "BM25 confirms exact HTTP 502 and health-check terms",
+        fusion: "RRF places ALB 502 evidence first",
+        detected: "Detected source: alb-502-health-checks.md",
+        initial: "Initial candidates already contain the detected source",
+        adaptive: "NO RETRY - precise chunk retrieval is sufficient",
+        ranked: "ALB 502 Overview, Symptoms, and Immediate Actions",
+        decision: "ACCEPT - one supported source and category align",
+        permission: "LLM ALLOWED - accept is the only generation route",
+        evidence: "Inspect target health, deployment changes, and backend response failures",
+        analysis: "Grounded ALB health-check analysis from accepted evidence",
+        contract: "status=analysis_ready; accepted_sources=[alb-502-health-checks.md]",
+        trace: "requested=adaptive; resolved=chunk; retry=false; decision=accept",
+        evaluation: "Main-chain routing smoke: accepted route calls the fake model exactly once"
+      },
+      "6:adaptive": {
+        query: "Lambda timed out and logs show AccessDenied",
+        normalized: "lambda timeout and logs show accessdenied",
+        gate: "PASS - timeout and AccessDenied are both asserted",
+        embedding: "The query vector strongly favors Lambda timeout chunks",
+        vector: "Initial Top 3 contains Lambda timeout but misses IAM",
+        lexical: "BM25 sees timeout and AccessDenied, but chunk concentration still favors Lambda",
+        fusion: "Initial RRF sources: lambda-timeout.md",
+        detected: "Detected sources: lambda-timeout.md + iam-accessdenied.md",
+        initial: "Missing after precise pass: iam-accessdenied.md",
+        adaptive: "RETRY - source-level search at candidate depth 10",
+        ranked: "Recovered Lambda + IAM sources; one unrelated neighbor remains visible",
+        decision: "CLARIFY - two supported incident categories align",
+        permission: "LLM BLOCKED - conflict requires clarification",
+        contract: "status=clarification_required; accepted_sources=[]",
+        trace: "requested=adaptive; resolved=source; retry=true; decision=clarify",
+        evaluation: "Adaptive branch recovered the missing source and still made zero LLM calls"
+      },
+      "6:evaluation": {
+        query: "Frozen Week 6 pipeline configuration",
+        contractData: "23 cases declare expected gate, sources, decision, accepted sources, and LLM permission",
+        splits: "Development 17 | Validation 2 | Fresh held-out 4",
+        evaluation: "Development 17/17; validation 2/2; fresh held-out 4/4",
+        coverage: "Required-source coverage: 100% across measured splits",
+        precision: "Candidate-source precision: 68.4% development; 75% held-out",
+        permission: "Main-chain smoke: 5/5 routes; 1 expected model call; 0 unsafe calls",
+        trace: "Routing telemetry records mode, retry, source lineage, acceptance, and permission",
+        decision: "PROMOTE ADAPTIVE LOCALLY - retain candidate precision as an explicit limitation"
       }
     };
 
@@ -2010,19 +2120,26 @@
         "min-score": ["Raw similarity", item.vector || "Candidate similarity", "Quality gate", item.threshold || "Keep only candidates with original similarity >= 0.60", "Thresholding removes weak semantic neighbors before bonuses can distort them."],
         "reranker": ["Valid candidates", item.vector || item.ranked || "Top-K semantic results", "Intent-aware order", item.reranked || item.ranked || "Relevant section promoted within the same runbook", "Reranking changes order; it cannot manufacture missing knowledge."],
         "rrf-fusion": ["Vector ranks + BM25 ranks", `${item.vector || "vector list"} | ${item.lexical || "BM25 list"}`, "Fused ranking", item.fusion || "RRF score = sum of reciprocal ranks", "RRF compares rank positions because raw retriever scores use incompatible scales."],
+        "adaptive-router": ["Detected vs initial sources", `${item.detected || "Active supported sources"} | ${item.initial || item.ranked || "Initial candidate sources"}`, "Retry decision", item.adaptive || "Keep precise chunk results unless a credible source is missing", "Adaptive retrieval protects precision by widening search only when evidence shows a recall risk."],
+        "adaptive-retry": ["Missing supported source", item.initial || "One detected source is absent from the initial candidates", "Recovered source candidates", item.ranked || "Deeper source-level search results", "The retry improves source recall, but acceptance still decides whether any candidate is trustworthy."],
         "final-top3": ["Surviving candidates", item.reranked || item.fusion || item.vector || "Ranked evidence", "Top evidence set", item.ranked || "Best three evidence chunks", "Top-K preserves useful context, but the next gate must still verify alignment."],
         "failure-diagnosis": ["Observed miss", item.ranked || item.vector || "Wrong or missing evidence", "Failure owner", item.diagnosis || "Identify gate, coverage, retrieval, ranking, or LLM failure", "Fixing the correct layer prevents random threshold and prompt changes."],
         "knowledge-coverage": ["Requested incident", item.query, "Coverage result", item.coverage || "Check whether a dedicated runbook exists", "A retriever cannot return knowledge that was never indexed."],
         "acceptance-gate": ["Top-ranked evidence", item.ranked || item.fusion || "RRF candidates", "Safety decision", item.decision || "ACCEPT only when incident family and category align", "Ranking answers what is closest; acceptance answers whether it is safe to use."],
         "clarification-output": ["Ambiguous incident", item.query, "Deterministic response", item.json || "Ask for the missing failure detail", "Clarification keeps the model from converting ambiguity into a confident diagnosis."],
         "coverage-output": ["Unsupported incident", item.query, "Deterministic response", item.json || "Report no coverage and escalate", "No coverage is an honest system outcome, not an application failure."],
+        "llm-router": ["Evidence decision", item.decision || "Acceptance result", "Model permission", item.permission || "Only accept may call the model", "Explicit permission prevents ambiguous, unsupported, or healthy inputs from becoming generated diagnoses."],
         "runbook-context": ["Accepted source", item.decision || item.ranked || "Validated Top-K evidence", "LLM context", item.evidence || "Only grounded runbook excerpts", "The context window receives concise evidence instead of the entire knowledge base."],
         "chat-model": ["Alert + accepted context", `${item.query} | ${item.evidence || "validated evidence"}`, "Model analysis", item.analysis || "Structured root-cause reasoning from supplied evidence", "The LLM explains accepted evidence; it does not decide whether that evidence was safe."],
         "severity-policy": ["Observed impact", item.analysis || item.query, "Policy result", item.severity || "P1, P2, or P3 from deterministic rules", "Operational policy makes severity repeatable across model runs."],
         "python-contract": ["Pipeline decision", item.decision || item.analysis || item.query, "Application-owned state", item.contract || "status and grounding controlled by Python", "Code owns permission and safety state; generated prose cannot override it."],
         "json-parser": ["Model text", item.analysis || "Generated structured response", "Validated fields", "Required keys parsed; invalid shapes rejected", "Parsing is a trust boundary between probabilistic output and application logic."],
         "json-output": ["Validated analysis", item.contract || item.analysis || "Safe pipeline result", "Final JSON", item.json || "{ status, severity, root_cause, action, grounding }", "Structured output is inspectable, testable, and usable by downstream tools."],
-        "retrieval-eval": ["Expected behavior", item.coverage || item.decision || item.query, "Measured result", item.evaluation || "Compare Top-1, Top-K, and negative rejection", "Evaluation converts architecture opinions into evidence-backed engineering decisions."]
+        "retrieval-eval": ["Expected behavior", item.coverage || item.decision || item.query, "Measured result", item.evaluation || "Compare Top-1, Top-K, and negative rejection", "Evaluation converts architecture opinions into evidence-backed engineering decisions."],
+        "data-contract": ["Scenario definitions", item.query, "Validated contract", item.contractData || "Expected behavior fields are complete and well formed", "The contract makes success criteria explicit before the pipeline runs."],
+        "dataset-splits": ["Evaluation cases", item.contractData || item.query, "Leakage-controlled groups", item.splits || "Development, validation, and held-out", "Different splits answer different questions; repeatedly tuning on held-out data destroys its value."],
+        "pipeline-eval": ["Frozen pipeline + expected cases", item.splits || item.query, "Stage-level evidence", `${item.evaluation || "Stage results"}; ${item.coverage || "coverage measured"}; ${item.precision || "precision measured"}`, "Coverage, precision, decisions, and model routing must be inspected together."],
+        "routing-trace": ["Runtime decisions", item.contract || item.decision || item.query, "Explainable trace", item.trace || "mode, retry, candidates, accepted sources, and decision", "Operational observability should reveal evidence lineage and routing without exposing private chain-of-thought."]
       };
 
       const values = stages[nodeId] || ["Stage input", item.query, "Stage output", "Inspectable pipeline state", "One stage should make one understandable decision."];
@@ -2077,13 +2194,14 @@
     let followFlow = false;
     let activeViewTransition = null;
 
-    let activeWeek = 5;
-    let scenario = "accept";
+    let activeWeek = 6;
+    let scenario = "adaptive";
 
     function defaultScenarioForWeek(weekNumber) {
       if (weekNumber === 3) return "reranked";
       if (weekNumber === 4) return "diagnosis";
       if (weekNumber === 5) return "accept";
+      if (weekNumber === 6) return "adaptive";
       return "incident";
     }
 
@@ -2246,9 +2364,67 @@
       `;
     }
 
+    function renderWeek6Lab() {
+      if (scenario === "evaluation") {
+        return `
+          <div class="section-label"><span>Evaluation proof chain</span><span>build, choose, prove</span></div>
+          <div class="infographic">
+            <div class="route-map">
+              <div class="route-step"><strong>1. Contract</strong><span>23 cases define expected behavior at every stage.</span></div>
+              <div class="route-step"><strong>2. Development</strong><span>Failures become permanent regression cases: 17/17.</span></div>
+              <div class="route-step warn"><strong>3. Validation</strong><span>Choose top_k=3 over noisier top_k=5: 2/2.</span></div>
+              <div class="route-step accept"><strong>4. Held-out</strong><span>Open the frozen four-case set once: routing 4/4.</span></div>
+            </div>
+            <div class="micro-stats">
+              <div class="micro-stat"><strong>100%</strong><span>held-out source coverage</span></div>
+              <div class="micro-stat"><strong>75%</strong><span>held-out candidate precision</span></div>
+              <div class="micro-stat"><strong>0</strong><span>unsafe LLM routes</span></div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (scenario === "accepted") {
+        return `
+          <div class="section-label"><span>Precise route</span><span>ALB 502 accepted</span></div>
+          <div class="infographic">
+            <div class="route-map">
+              <div class="route-step"><strong>Initial Hybrid RRF</strong><span>Precise Top 3 already contains the ALB 502 source.</span></div>
+              <div class="route-step accept"><strong>No Retry</strong><span>The detected source is present, so search stays narrow.</span></div>
+              <div class="route-step accept"><strong>Evidence Accepts</strong><span>One supported family and category align.</span></div>
+              <div class="route-step accept"><strong>LLM Permitted</strong><span>Accepted evidence reaches Gemma; routing trace records why.</span></div>
+            </div>
+            <div class="micro-stats">
+              <div class="micro-stat"><strong>chunk</strong><span>resolved ranking mode</span></div>
+              <div class="micro-stat"><strong>false</strong><span>adaptive retry used</span></div>
+              <div class="micro-stat"><strong>1</strong><span>expected model call</span></div>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="section-label"><span>Adaptive recovery route</span><span>Lambda + IAM conflict</span></div>
+        <div class="infographic">
+          <div class="route-map">
+            <div class="route-step"><strong>Precise First Pass</strong><span>Chunk ranking retrieves Lambda but misses IAM.</span></div>
+            <div class="route-step warn"><strong>Compare Sources</strong><span>The alert asserts two supported sources; IAM is missing.</span></div>
+            <div class="route-step warn"><strong>Conditional Retry</strong><span>Source-level search at depth 10 recovers IAM.</span></div>
+            <div class="route-step accept"><strong>Clarify Safely</strong><span>Two incident categories align, so Gemma is skipped.</span></div>
+          </div>
+          <div class="micro-stats">
+            <div class="micro-stat"><strong>source</strong><span>resolved ranking mode</span></div>
+            <div class="micro-stat"><strong>true</strong><span>adaptive retry used</span></div>
+            <div class="micro-stat"><strong>0</strong><span>conflict model calls</span></div>
+          </div>
+        </div>
+      `;
+    }
+
     function renderScoreLab(week) {
       if (week.n === 4) return renderWeek4Lab();
       if (week.n === 5) return renderWeek5Lab();
+      if (week.n === 6) return renderWeek6Lab();
       if (week.n !== 3) return "";
 
       if (scenario === "vector") {
@@ -2432,6 +2608,20 @@
           "Python owns grounding and status; the LLM analyzes accepted evidence only."
         ];
       }
+      if (weekNumber === 6) {
+        return [
+          "Development builds, validation chooses, and held-out proves the frozen configuration.",
+          "A held-out case becomes development data after its failure influences implementation.",
+          "Required-source coverage and candidate-source precision answer different questions.",
+          "Perfect retrieval coverage does not guarantee a correct acceptance or routing decision.",
+          "Shared signal semantics keep the entry gate and acceptance gate consistent.",
+          "Adaptive retrieval begins precise and widens only for a credible missing source.",
+          "Adaptive retry recovers candidates; evidence acceptance remains the trust boundary.",
+          "Only accept permits an LLM call; no_incident, no_coverage, and clarify stay deterministic.",
+          "Stage-level metrics reveal whether gating, retrieval, acceptance, or routing failed.",
+          "Small synthetic results are engineering evidence, not production accuracy claims."
+        ];
+      }
       return [
         "Planned week. Do not claim evidence before implementation.",
         "Add measurements after the build is complete.",
@@ -2453,6 +2643,9 @@
       if (week.n === 5 && scenario === "clarify") selectedFlow = hybridClarifyFlow;
       if (week.n === 5 && scenario === "conflict") selectedFlow = hybridConflictFlow;
       if (week.n === 5 && scenario === "no-coverage") selectedFlow = hybridNoCoverageFlow;
+      if (week.n === 6 && scenario === "accepted") selectedFlow = week6AcceptedFlow;
+      if (week.n === 6 && scenario === "adaptive") selectedFlow = week6AdaptiveFlow;
+      if (week.n === 6 && scenario === "evaluation") selectedFlow = week6EvaluationFlow;
       const flowIds = new Set(selectedFlow);
       const visibleNodes = architectureNodes.filter(
         (node) => node.week <= Math.min(12, week.n + 1)
@@ -2488,6 +2681,9 @@
     }
 
     function completionLabel() {
+      if (activeWeek === 6 && scenario === "adaptive") return "Missing source recovered; conflict clarified; LLM skipped";
+      if (activeWeek === 6 && scenario === "accepted") return "Evidence accepted; one grounded model call permitted";
+      if (activeWeek === 6 && scenario === "evaluation") return "Week 6 evaluation proof complete";
       if (activeWeek === 5 && scenario === "no-incident") return "No incident; retrieval and LLM skipped";
       if (activeWeek === 5 && scenario === "clarify") return "Clarification ready; LLM skipped";
       if (activeWeek === 5 && scenario === "conflict") return "Conflict clarified consistently; LLM skipped";
@@ -2754,7 +2950,7 @@
     }
 
     function renderControls(week) {
-      scenarioControls.style.display = [2, 3, 4, 5].includes(week.n) ? "flex" : "none";
+      scenarioControls.style.display = [2, 3, 4, 5, 6].includes(week.n) ? "flex" : "none";
       if (week.n === 2) {
         scenarioControls.innerHTML = `
           <button class="scenario-btn ${scenario === "incident" ? "active" : ""}" data-scenario="incident" type="button">Incident</button>
@@ -2783,6 +2979,15 @@
           <button class="scenario-btn ${scenario === "no-coverage" ? "active" : ""}" data-scenario="no-coverage" type="button">No coverage</button>
         `;
         scenarioLabel.textContent = `${scenario.replace("-", " ")} route`;
+      } else if (week.n === 6) {
+        scenarioControls.innerHTML = `
+          <button class="scenario-btn ${scenario === "accepted" ? "active" : ""}" data-scenario="accepted" type="button">Precise accept</button>
+          <button class="scenario-btn ${scenario === "adaptive" ? "active" : ""}" data-scenario="adaptive" type="button">Adaptive conflict</button>
+          <button class="scenario-btn ${scenario === "evaluation" ? "active" : ""}" data-scenario="evaluation" type="button">Evaluation proof</button>
+        `;
+        scenarioLabel.textContent = scenario === "evaluation"
+          ? "evaluation lifecycle"
+          : `${scenario} routing flow`;
       } else {
         scenarioControls.innerHTML = "";
         scenarioLabel.textContent = "week architecture";
