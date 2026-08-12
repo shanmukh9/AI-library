@@ -12,6 +12,7 @@ from hybrid_retriever import (
 
 CHAT_COMPLETIONS_URL = "http://127.0.0.1:1234/v1/chat/completions"
 CHAT_MODEL = "google/gemma-4-e4b"
+CHAT_REQUEST_TIMEOUT_SECONDS = 180
 RETRIEVAL_TOP_K = 3
 RETRIEVAL_CANDIDATE_K = 5
 RETRIEVAL_RANKING_MODE = "adaptive"
@@ -22,12 +23,39 @@ ALERT_ANALYSIS_SCHEMA = {
         "severity": {"type": "string", "enum": ["P1", "P2", "P3"]},
         "model_confidence": {"type": "number"},
         "immediate_action": {"type": "string"},
+        "tool_proposal": {
+            "anyOf": [
+                {"type": "null"},
+                {
+                    "type": "object",
+                    "properties": {
+                        "tool_name": {
+                            "type": "string",
+                            "enum": ["inspect_lambda_metrics"],
+                        },
+                        "rationale": {"type": "string"},
+                        "evidence_refs": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "minItems": 1,
+                        },
+                    },
+                    "required": [
+                        "tool_name",
+                        "rationale",
+                        "evidence_refs",
+                    ],
+                    "additionalProperties": False,
+                },
+            ]
+        },
     },
     "required": [
         "root_cause",
         "severity",
         "model_confidence",
         "immediate_action",
+        "tool_proposal",
     ],
     "additionalProperties": False,
 }
@@ -80,8 +108,16 @@ def call_chat_model(messages):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=180) as response:
+        with urllib.request.urlopen(
+            request,
+            timeout=CHAT_REQUEST_TIMEOUT_SECONDS,
+        ) as response:
             body = json.loads(response.read().decode("utf-8"))
+    except TimeoutError as exc:
+        raise RuntimeError(
+            "LM Studio chat request timed out after "
+            f"{CHAT_REQUEST_TIMEOUT_SECONDS} seconds."
+        ) from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(
             "Could not reach LM Studio chat endpoint. "
@@ -100,12 +136,25 @@ Severity policy:
 - P2: degraded service, expiring certificates, capacity pressure, missed acknowledgement, or delayed observability without confirmed outage.
 - P3: low-risk maintenance, cost awareness, CI/CD failure, or non-urgent infrastructure hygiene.
 Do not include reasoning, markdown, or prose outside the JSON object.
+Tool proposal policy:
+- The only tool you may propose is inspect_lambda_metrics.
+- Propose it only when the accepted evidence concerns lambda-timeout.md and Lambda metrics would reduce uncertainty.
+- Otherwise set tool_proposal to null.
+- evidence_refs must contain exact source filenames from the accepted runbook evidence.
+- Never output incident acceptance, action-evidence, approval, authorization, or execution decisions.
 Respond ONLY with valid JSON:
 {
   "root_cause": "one sentence explanation",
   "severity": "P1, P2, or P3",
-  "model_confidence": 0.0 to 1.0,
-  "immediate_action": "one sentence recommendation"
+  "model_confidence": 0.0,
+  "immediate_action": "one sentence recommendation",
+  "tool_proposal": null
+}
+When proposing inspection, tool_proposal must be:
+{
+  "tool_name": "inspect_lambda_metrics",
+  "rationale": "one sentence explaining why inspection reduces uncertainty",
+  "evidence_refs": ["exact-accepted-source.md"]
 }
 Note: model_confidence is your qualitative opinion only. It is not calibrated probability."""
 

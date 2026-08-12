@@ -66,6 +66,7 @@ def main():
                 "severity": "P1",
                 "model_confidence": 0.9,
                 "immediate_action": "Follow the accepted runbook evidence.",
+                "tool_proposal": None,
             }
         )
 
