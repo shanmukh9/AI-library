@@ -23,6 +23,9 @@ def accepted_lambda_analysis(_alert):
             "immediate_action": "Inspect Lambda duration and timeout metrics.",
             "tool_proposal": {
                 "tool_name": "inspect_lambda_metrics",
+                "tool_arguments": {
+                    "function_name": "payment-processor",
+                },
                 "rationale": "Confirm whether duration is approaching the timeout.",
                 "evidence_refs": ["lambda-timeout.md"],
             },

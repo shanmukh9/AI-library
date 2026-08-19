@@ -1,6 +1,89 @@
 from tool_policy import TOOL_POLICIES, evaluate_tool_request
 from simulated_tools import TOOL_HANDLERS
 
+TOOL_ARGUMENT_SCHEMAS = {
+    "inspect_lambda_metrics": {
+        "function_name": str,
+    },
+    "rollback_lambda_deployment": {
+        "function_name": str,
+    },
+}
+
+
+def validate_tool_arguments(
+    tool_name: str,
+    arguments: object,
+) -> tuple[bool, str]:
+    schema = TOOL_ARGUMENT_SCHEMAS.get(tool_name)
+
+    if schema is None:
+        return False, "No argument schema is registered for this tool."
+
+    if not isinstance(arguments, dict):
+        return False, "Tool arguments must be an object."
+
+    expected_fields = set(schema)
+    actual_fields = set(arguments)
+
+    missing = expected_fields - actual_fields
+    if missing:
+        return False, f"Missing tool arguments: {sorted(missing)}"
+
+    unexpected = actual_fields - expected_fields
+    if unexpected:
+        return False, f"Unexpected tool arguments: {sorted(unexpected)}"
+
+    function_name = arguments["function_name"]
+
+    if not isinstance(function_name, str) or not function_name.strip():
+        return False, "function_name must be a non-empty string."
+
+    return True, "Tool arguments are valid."
+
+def validate_tool_observation(
+    tool_name: str,
+    requested_arguments: object,
+    observation: object,
+) -> tuple[bool, str]:
+    if tool_name != "inspect_lambda_metrics":
+        return False, "No observation contract is registered for this tool."
+
+    if not isinstance(requested_arguments, dict):
+        return False, "Requested tool arguments are invalid."
+
+    if not isinstance(observation, dict):
+        return False, "Tool observation must be an object."
+
+    requested_function = requested_arguments.get("function_name")
+    observed_function = observation.get("function")
+
+    if (
+        not isinstance(observed_function, str)
+        or not observed_function.strip()
+    ):
+        return False, "Observed function must be a non-empty string."
+
+    if observed_function != requested_function:
+        return (
+            False,
+            "Observed function does not match requested function.",
+        )
+
+    duration_seconds = observation.get("duration_seconds")
+
+    if (
+        isinstance(duration_seconds, bool)
+        or not isinstance(duration_seconds, (int, float))
+        or duration_seconds < 0
+    ):
+        return (
+            False,
+            "duration_seconds must be a non-negative number.",
+        )
+
+    return True, "Tool observation matches the request."
+
 def authorize_tool(
     tool_name: str,
     *,
@@ -33,10 +116,23 @@ def authorize_tool(
 def run_agent_step(
     tool_name: str,
     *,
+    tool_arguments: object,
     incident_accepted: bool,
     action_evidence_complete: bool,
     human_approved: bool,
 ) -> dict:
+    valid, reason = validate_tool_arguments(
+        tool_name,
+        tool_arguments,
+    )
+
+    if not valid:
+        return {
+            "tool": tool_name,
+            "status": "blocked",
+            "reason": reason,
+        }
+
     authorization = authorize_tool(
         tool_name,
         incident_accepted=incident_accepted,
@@ -56,16 +152,42 @@ def run_agent_step(
             "reason": "No executable handler is registered.",
         }
 
-    result = handler()
+    validated_arguments = dict(tool_arguments)
+    result = handler(**validated_arguments)
+
+    observation_valid, observation_reason = validate_tool_observation(
+        tool_name,
+        validated_arguments,
+        result,
+    )
+
+    if not observation_valid:
+        return {
+            "tool": tool_name,
+            "arguments": validated_arguments,
+            "status": "observation_rejected",
+            "reason": observation_reason,
+            "tool_executed": True,
+            "result_trusted": False,
+            "untrusted_result": result,
+        }
 
     return {
         "tool": tool_name,
+        "arguments": validated_arguments,
         "status": "executed",
-        "reason": "Tool executed after policy authorization.",
+        "reason": "Tool executed after contract and policy validation.",
+        "tool_executed": True,
+        "result_trusted": True,
         "result": result,
     }
 
-PROPOSAL_FIELDS = {"tool_name", "rationale", "evidence_refs"}
+PROPOSAL_FIELDS = {
+    "tool_name",
+    "tool_arguments",
+    "rationale",
+    "evidence_refs",
+}
 
 def run_pipeline_tool(
     pipeline_result: dict,
@@ -158,6 +280,7 @@ def run_pipeline_tool(
 
     return run_agent_step(
         proposal["tool_name"],
+        tool_arguments=proposal["tool_arguments"],
         incident_accepted=True,
         action_evidence_complete=action_evidence_complete,
         human_approved=human_approved,

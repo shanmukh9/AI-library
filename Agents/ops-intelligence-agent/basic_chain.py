@@ -10,55 +10,12 @@ from hybrid_retriever import (
 )
 
 
-CHAT_COMPLETIONS_URL = "http://127.0.0.1:1234/v1/chat/completions"
+CHAT_URL = "http://127.0.0.1:1234/api/v1/chat"
 CHAT_MODEL = "google/gemma-4-e4b"
-CHAT_REQUEST_TIMEOUT_SECONDS = 180
+CHAT_REQUEST_TIMEOUT_SECONDS = 120
 RETRIEVAL_TOP_K = 3
 RETRIEVAL_CANDIDATE_K = 5
 RETRIEVAL_RANKING_MODE = "adaptive"
-ALERT_ANALYSIS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "root_cause": {"type": "string"},
-        "severity": {"type": "string", "enum": ["P1", "P2", "P3"]},
-        "model_confidence": {"type": "number"},
-        "immediate_action": {"type": "string"},
-        "tool_proposal": {
-            "anyOf": [
-                {"type": "null"},
-                {
-                    "type": "object",
-                    "properties": {
-                        "tool_name": {
-                            "type": "string",
-                            "enum": ["inspect_lambda_metrics"],
-                        },
-                        "rationale": {"type": "string"},
-                        "evidence_refs": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "minItems": 1,
-                        },
-                    },
-                    "required": [
-                        "tool_name",
-                        "rationale",
-                        "evidence_refs",
-                    ],
-                    "additionalProperties": False,
-                },
-            ]
-        },
-    },
-    "required": [
-        "root_cause",
-        "severity",
-        "model_confidence",
-        "immediate_action",
-        "tool_proposal",
-    ],
-    "additionalProperties": False,
-}
 
 with open("data/alerts.json", encoding="utf-8") as alerts_file:
     alerts = json.load(alerts_file)
@@ -87,22 +44,104 @@ def parse_model_json(content):
         raise ValueError(f"Model did not return valid JSON. Preview: {preview}") from exc
 
 
+def validate_alert_analysis(analysis):
+    expected_fields = {
+        "root_cause",
+        "severity",
+        "model_confidence",
+        "immediate_action",
+        "tool_proposal",
+    }
+    if not isinstance(analysis, dict):
+        raise ValueError("Model analysis must be a JSON object.")
+
+    actual_fields = set(analysis)
+    if actual_fields != expected_fields:
+        missing = sorted(expected_fields - actual_fields)
+        unexpected = sorted(actual_fields - expected_fields)
+        raise ValueError(
+            "Model analysis fields do not match the contract. "
+            f"Missing: {missing}; unexpected: {unexpected}."
+        )
+
+    for field in ("root_cause", "immediate_action"):
+        if not isinstance(analysis[field], str) or not analysis[field].strip():
+            raise ValueError(f"{field} must be a non-empty string.")
+
+    if analysis["severity"] not in {"P1", "P2", "P3"}:
+        raise ValueError("severity must be P1, P2, or P3.")
+
+    confidence = analysis["model_confidence"]
+    if (
+        isinstance(confidence, bool)
+        or not isinstance(confidence, (int, float))
+        or not 0 <= confidence <= 1
+    ):
+        raise ValueError("model_confidence must be a number from 0 to 1.")
+
+    proposal = analysis["tool_proposal"]
+    if proposal is not None:
+        proposal_fields = {
+            "tool_name",
+            "tool_arguments",
+            "rationale",
+            "evidence_refs",
+        }
+        if not isinstance(proposal, dict) or set(proposal) != proposal_fields:
+            raise ValueError("tool_proposal does not match its contract.")
+        if proposal["tool_name"] != "inspect_lambda_metrics":
+            raise ValueError("tool_proposal contains an unsupported tool.")
+        tool_arguments = proposal["tool_arguments"]
+        if not isinstance(tool_arguments, dict) or set(tool_arguments) != {
+            "function_name"
+        }:
+            raise ValueError(
+                "tool_proposal tool_arguments must contain only function_name."
+            )
+        function_name = tool_arguments["function_name"]
+        if not isinstance(function_name, str) or not function_name.strip():
+            raise ValueError(
+                "tool_proposal function_name must be a non-empty string."
+            )
+        if (
+            not isinstance(proposal["rationale"], str)
+            or not proposal["rationale"].strip()
+        ):
+            raise ValueError("tool_proposal rationale must be non-empty.")
+        evidence_refs = proposal["evidence_refs"]
+        if not isinstance(evidence_refs, list) or not evidence_refs or not all(
+            isinstance(reference, str) and reference.strip()
+            for reference in evidence_refs
+        ):
+            raise ValueError(
+                "tool_proposal evidence_refs must contain non-empty strings."
+            )
+
+    return analysis
+
+
 def call_chat_model(messages):
+    system_prompt = "\n\n".join(
+        message["content"]
+        for message in messages
+        if message.get("role") == "system"
+    )
+    input_text = "\n\n".join(
+        message["content"]
+        for message in messages
+        if message.get("role") != "system"
+    )
     payload = {
         "model": CHAT_MODEL,
-        "messages": messages,
-        "temperature": 0.2,
-        "max_tokens": 500,
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "alert_analysis",
-                "schema": ALERT_ANALYSIS_SCHEMA,
-            },
-        },
+        "system_prompt": system_prompt,
+        "input": input_text,
+        "reasoning": "off",
+        "temperature": 0,
+        "max_output_tokens": 350,
+        "store": False,
     }
     request = urllib.request.Request(
-        CHAT_COMPLETIONS_URL,
+        CHAT_URL,
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -123,8 +162,12 @@ def call_chat_model(messages):
             "Could not reach LM Studio chat endpoint. "
             "Start LM Studio and load the chat model."
         ) from exc
-    message = body["choices"][0]["message"]
-    return message.get("content") or message.get("reasoning_content") or ""
+    output_messages = [
+        item for item in body.get("output", []) if item.get("type") == "message"
+    ]
+    if not output_messages:
+        raise RuntimeError("LM Studio returned no final message content.")
+    return output_messages[-1].get("content", "")
 
 
 system = """You are an expert CloudOps engineer.
@@ -153,6 +196,7 @@ Respond ONLY with valid JSON:
 When proposing inspection, tool_proposal must be:
 {
   "tool_name": "inspect_lambda_metrics",
+  "tool_arguments": {"function_name": "lambda-function-name"},
   "rationale": "one sentence explaining why inspection reduces uncertainty",
   "evidence_refs": ["exact-accepted-source.md"]
 }
@@ -286,7 +330,7 @@ def analyze_alert(alert):
                 },
             ]
         )
-        analysis = parse_model_json(response_content)
+        analysis = validate_alert_analysis(parse_model_json(response_content))
     except (RuntimeError, ValueError) as exc:
         return {
             "status": "model_error",

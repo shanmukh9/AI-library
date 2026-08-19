@@ -1,6 +1,8 @@
 from agent_loop import run_pipeline_tool
 
 
+
+
 result = run_pipeline_tool(
     {"status": "no_incident"},
     action_evidence_complete=False,
@@ -47,6 +49,9 @@ mismatched_result = {
     "analysis": {
         "tool_proposal": {
             "tool_name": "inspect_lambda_metrics",
+            "tool_arguments": {
+                "function_name": "payment-processor",
+            },
             "rationale": "Investigate permission failures.",
             "evidence_refs": ["iam-accessdenied.md"],
         },
@@ -77,6 +82,9 @@ matching_result = {
     "analysis": {
         "tool_proposal": {
             "tool_name": "inspect_lambda_metrics",
+            "tool_arguments": {
+                "function_name": "payment-processor",
+            },
             "rationale": "Inspect whether duration approaches the timeout.",
             "evidence_refs": ["lambda-timeout.md"],
         },
