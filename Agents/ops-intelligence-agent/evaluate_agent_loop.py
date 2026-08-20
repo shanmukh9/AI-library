@@ -1,5 +1,6 @@
 from agent_loop import (
     TOOL_HANDLERS,
+    build_tool_call_fingerprint,
     run_agent_step,
     validate_tool_arguments,
     validate_tool_observation,
@@ -94,6 +95,17 @@ assert invalid_execution["reason"] == (
 )
 
 print("PASS agent step blocks invalid arguments before execution")
+assert result["derived_facts"] == {
+    "timeout_headroom_seconds": 0.2,
+    "timeout_utilization_percent": 98.7,
+    "near_timeout": True,
+    "timed_out": False,
+}
+assert result["follow_up"] == {
+    "decision": "stop_and_escalate",
+    "reason": "Execution is within five percent of its timeout.",
+    "automatic_action": None,
+}
 
 
 observation_calls = {"count": 0}
@@ -132,6 +144,57 @@ try:
     assert "result" not in rejected_observation
 
     print("PASS malformed executed observation is not trusted")
+finally:
+    TOOL_HANDLERS["inspect_lambda_metrics"] = original_inspection_handler
+
+
+duplicate_calls = {"count": 0}
+original_inspection_handler = TOOL_HANDLERS["inspect_lambda_metrics"]
+
+
+def counting_inspection(*, function_name: str):
+    duplicate_calls["count"] += 1
+    return {
+        "mode": "simulation",
+        "function": function_name,
+        "duration_seconds": 14.8,
+        "configured_timeout_seconds": 15,
+        "downstream_latency": "normal",
+        "recent_deployment": True,
+    }
+
+
+TOOL_HANDLERS["inspect_lambda_metrics"] = counting_inspection
+seen_tool_calls = set()
+
+try:
+    first_call = run_agent_step(
+        "inspect_lambda_metrics",
+        tool_arguments={
+            "function_name": "payment-processor",
+        },
+        incident_accepted=True,
+        action_evidence_complete=False,
+        human_approved=False,
+        seen_tool_calls=seen_tool_calls,
+    )
+    duplicate_call = run_agent_step(
+        "inspect_lambda_metrics",
+        tool_arguments={
+            "function_name": "payment-processor",
+        },
+        incident_accepted=True,
+        action_evidence_complete=False,
+        human_approved=False,
+        seen_tool_calls=seen_tool_calls,
+    )
+
+    assert first_call["status"] == "executed"
+    assert duplicate_call["status"] == "duplicate_rejected"
+    assert duplicate_call["tool_executed"] is False
+    assert duplicate_calls["count"] == 1
+
+    print("PASS duplicate tool call executes only once per agent run")
 finally:
     TOOL_HANDLERS["inspect_lambda_metrics"] = original_inspection_handler
 
@@ -182,3 +245,56 @@ try:
     print("PASS blocked rollback caused zero handler calls")
 finally:
     TOOL_HANDLERS.pop("rollback_lambda_deployment", None)
+
+
+
+
+invalid_timeout_observation = {
+    "mode": "simulation",
+    "function": "payment-processor",
+    "duration_seconds": 14.8,
+    "configured_timeout_seconds": 0,
+    "downstream_latency": "normal",
+    "recent_deployment": True,
+}
+
+valid, reason = validate_tool_observation(
+    "inspect_lambda_metrics",
+    {"function_name": "payment-processor"},
+    invalid_timeout_observation,
+)
+
+
+first_fingerprint = build_tool_call_fingerprint(
+    "inspect_lambda_metrics",
+    {
+        "function_name": "payment-processor",
+        "region": "ap-south-1",
+    },
+)
+reordered_fingerprint = build_tool_call_fingerprint(
+    "inspect_lambda_metrics",
+    {
+        "region": "ap-south-1",
+        "function_name": "payment-processor",
+    },
+)
+different_target_fingerprint = build_tool_call_fingerprint(
+    "inspect_lambda_metrics",
+    {
+        "function_name": "notification-worker",
+        "region": "ap-south-1",
+    },
+)
+
+assert first_fingerprint == reordered_fingerprint
+assert first_fingerprint != different_target_fingerprint
+
+print("PASS tool-call fingerprint ignores argument ordering")
+
+assert valid is False
+assert reason == (
+    "configured_timeout_seconds must be a positive number."
+)
+
+print("PASS invalid configured timeout is rejected")

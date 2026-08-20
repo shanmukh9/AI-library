@@ -1,3 +1,5 @@
+import json
+
 from tool_policy import TOOL_POLICIES, evaluate_tool_request
 from simulated_tools import TOOL_HANDLERS
 
@@ -9,6 +11,20 @@ TOOL_ARGUMENT_SCHEMAS = {
         "function_name": str,
     },
 }
+
+NEAR_TIMEOUT_UTILIZATION_THRESHOLD = 0.95
+
+
+def build_tool_call_fingerprint(
+    tool_name: str,
+    tool_arguments: dict,
+) -> str:
+    normalized_arguments = json.dumps(
+        tool_arguments,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return f"{tool_name}:{normalized_arguments}"
 
 
 def validate_tool_arguments(
@@ -68,21 +84,71 @@ def validate_tool_observation(
         return (
             False,
             "Observed function does not match requested function.",
-        )
+    )
 
     duration_seconds = observation.get("duration_seconds")
+    if (
+    isinstance(duration_seconds, bool)
+    or not isinstance(duration_seconds, (int, float))
+    or duration_seconds < 0
+):
+        return (
+        False,
+        "duration_seconds must be a non-negative number.",
+    )
+
+    timeout_seconds = observation.get("configured_timeout_seconds")
 
     if (
-        isinstance(duration_seconds, bool)
-        or not isinstance(duration_seconds, (int, float))
-        or duration_seconds < 0
+        isinstance(timeout_seconds, bool)
+        or not isinstance(timeout_seconds, (int, float))
+        or timeout_seconds <= 0
     ):
         return (
             False,
-            "duration_seconds must be a non-negative number.",
+            "configured_timeout_seconds must be a positive number.",
         )
 
     return True, "Tool observation matches the request."
+
+
+def derive_lambda_observation_facts(observation: dict) -> dict:
+    duration_seconds = float(observation["duration_seconds"])
+    timeout_seconds = float(observation["configured_timeout_seconds"])
+    utilization = duration_seconds / timeout_seconds
+
+    return {
+        "timeout_headroom_seconds": round(
+            timeout_seconds - duration_seconds,
+            3,
+        ),
+        "timeout_utilization_percent": round(utilization * 100, 1),
+        "near_timeout": utilization
+        >= NEAR_TIMEOUT_UTILIZATION_THRESHOLD,
+        "timed_out": duration_seconds >= timeout_seconds,
+    }
+
+
+def decide_lambda_tool_follow_up(derived_facts: dict) -> dict:
+    if derived_facts["timed_out"]:
+        return {
+            "decision": "stop_and_escalate",
+            "reason": "Execution reached or exceeded its configured timeout.",
+            "automatic_action": None,
+        }
+
+    if derived_facts["near_timeout"]:
+        return {
+            "decision": "stop_and_escalate",
+            "reason": "Execution is within five percent of its timeout.",
+            "automatic_action": None,
+        }
+
+    return {
+        "decision": "stop",
+        "reason": "Inspection did not confirm timeout pressure.",
+        "automatic_action": None,
+    }
 
 def authorize_tool(
     tool_name: str,
@@ -120,6 +186,7 @@ def run_agent_step(
     incident_accepted: bool,
     action_evidence_complete: bool,
     human_approved: bool,
+    seen_tool_calls: set[str] | None = None,
 ) -> dict:
     valid, reason = validate_tool_arguments(
         tool_name,
@@ -153,6 +220,24 @@ def run_agent_step(
         }
 
     validated_arguments = dict(tool_arguments)
+    fingerprint = build_tool_call_fingerprint(
+        tool_name,
+        validated_arguments,
+    )
+
+    if seen_tool_calls is not None and fingerprint in seen_tool_calls:
+        return {
+            "tool": tool_name,
+            "arguments": validated_arguments,
+            "fingerprint": fingerprint,
+            "status": "duplicate_rejected",
+            "reason": "Tool call already occurred during this agent run.",
+            "tool_executed": False,
+        }
+
+    if seen_tool_calls is not None:
+        seen_tool_calls.add(fingerprint)
+
     result = handler(**validated_arguments)
 
     observation_valid, observation_reason = validate_tool_observation(
@@ -165,6 +250,7 @@ def run_agent_step(
         return {
             "tool": tool_name,
             "arguments": validated_arguments,
+            "fingerprint": fingerprint,
             "status": "observation_rejected",
             "reason": observation_reason,
             "tool_executed": True,
@@ -172,13 +258,19 @@ def run_agent_step(
             "untrusted_result": result,
         }
 
+    derived_facts = derive_lambda_observation_facts(result)
+    follow_up = decide_lambda_tool_follow_up(derived_facts)
+
     return {
         "tool": tool_name,
         "arguments": validated_arguments,
+        "fingerprint": fingerprint,
         "status": "executed",
         "reason": "Tool executed after contract and policy validation.",
         "tool_executed": True,
         "result_trusted": True,
+        "derived_facts": derived_facts,
+        "follow_up": follow_up,
         "result": result,
     }
 
