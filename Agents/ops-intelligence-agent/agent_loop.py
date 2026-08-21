@@ -1,4 +1,6 @@
 import json
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from tool_policy import TOOL_POLICIES, evaluate_tool_request
 from simulated_tools import TOOL_HANDLERS
@@ -13,6 +15,14 @@ TOOL_ARGUMENT_SCHEMAS = {
 }
 
 NEAR_TIMEOUT_UTILIZATION_THRESHOLD = 0.95
+MAX_AGENT_STEPS = 2
+
+
+@dataclass
+class AgentRunState:
+    max_steps: int = MAX_AGENT_STEPS
+    steps_used: int = 0
+    seen_tool_calls: set[str] = field(default_factory=set)
 
 
 def build_tool_call_fingerprint(
@@ -186,8 +196,22 @@ def run_agent_step(
     incident_accepted: bool,
     action_evidence_complete: bool,
     human_approved: bool,
-    seen_tool_calls: set[str] | None = None,
+    run_state: AgentRunState | None = None,
 ) -> dict:
+    active_run_state = run_state or AgentRunState()
+
+    if active_run_state.steps_used >= active_run_state.max_steps:
+        return {
+            "tool": tool_name,
+            "status": "step_limit_reached",
+            "reason": "Agent run exhausted its tool-call budget.",
+            "tool_executed": False,
+            "steps_used": active_run_state.steps_used,
+            "max_steps": active_run_state.max_steps,
+        }
+
+    active_run_state.steps_used += 1
+
     valid, reason = validate_tool_arguments(
         tool_name,
         tool_arguments,
@@ -225,7 +249,7 @@ def run_agent_step(
         validated_arguments,
     )
 
-    if seen_tool_calls is not None and fingerprint in seen_tool_calls:
+    if fingerprint in active_run_state.seen_tool_calls:
         return {
             "tool": tool_name,
             "arguments": validated_arguments,
@@ -235,8 +259,7 @@ def run_agent_step(
             "tool_executed": False,
         }
 
-    if seen_tool_calls is not None:
-        seen_tool_calls.add(fingerprint)
+    active_run_state.seen_tool_calls.add(fingerprint)
 
     result = handler(**validated_arguments)
 
@@ -286,6 +309,7 @@ def run_pipeline_tool(
     *,
     action_evidence_complete: bool,
     human_approved: bool,
+    run_state: AgentRunState | None = None,
 ) -> dict:
     pipeline_status = pipeline_result.get("status")
 
@@ -376,7 +400,137 @@ def run_pipeline_tool(
         incident_accepted=True,
         action_evidence_complete=action_evidence_complete,
         human_approved=human_approved,
+        run_state=run_state,
     )
+
+
+def run_bounded_agent_loop(
+    initial_pipeline_result: dict,
+    *,
+    next_proposal_provider: Callable[[list[dict]], dict | None] | None = None,
+    action_evidence_complete: bool = False,
+    human_approved: bool = False,
+    max_steps: int = MAX_AGENT_STEPS,
+) -> dict:
+    if (
+        isinstance(max_steps, bool)
+        or not isinstance(max_steps, int)
+        or max_steps <= 0
+    ):
+        return {
+            "status": "blocked",
+            "reason": "max_steps must be a positive integer.",
+            "steps_used": 0,
+            "max_steps": max_steps,
+            "history": [],
+        }
+
+    run_state = AgentRunState(max_steps=max_steps)
+    history: list[dict] = []
+    current_pipeline_result = initial_pipeline_result
+    accepted_retrieval = initial_pipeline_result.get("retrieval")
+
+    while True:
+        action_result = run_pipeline_tool(
+            current_pipeline_result,
+            action_evidence_complete=action_evidence_complete,
+            human_approved=human_approved,
+            run_state=run_state,
+        )
+        history.append(action_result)
+
+        if action_result.get("status") != "executed":
+            return {
+                "status": action_result.get("status", "blocked"),
+                "reason": action_result.get(
+                    "reason",
+                    "Agent action did not complete.",
+                ),
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+            }
+
+        follow_up = action_result.get("follow_up")
+        if not isinstance(follow_up, dict):
+            return {
+                "status": "blocked",
+                "reason": "Trusted observation is missing a follow-up decision.",
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+            }
+
+        decision = follow_up.get("decision")
+
+        if decision == "stop":
+            return {
+                "status": "completed",
+                "reason": follow_up.get("reason", "Agent run completed."),
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+                "final_follow_up": follow_up,
+            }
+
+        if decision == "stop_and_escalate":
+            return {
+                "status": "escalation_required",
+                "reason": follow_up.get(
+                    "reason",
+                    "Agent run requires escalation.",
+                ),
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+                "final_follow_up": follow_up,
+            }
+
+        if decision != "continue":
+            return {
+                "status": "blocked",
+                "reason": "Follow-up decision is not supported.",
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+            }
+
+        if run_state.steps_used >= run_state.max_steps:
+            return {
+                "status": "step_limit_reached",
+                "reason": "Agent run exhausted its tool-call budget.",
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+            }
+
+        if next_proposal_provider is None:
+            return {
+                "status": "blocked",
+                "reason": "Continuation requested without a proposal provider.",
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+            }
+
+        next_proposal = next_proposal_provider(list(history))
+        if next_proposal is None:
+            return {
+                "status": "completed",
+                "reason": "No further tool action was proposed.",
+                "steps_used": run_state.steps_used,
+                "max_steps": run_state.max_steps,
+                "history": history,
+                "final_follow_up": follow_up,
+            }
+
+        current_pipeline_result = {
+            "status": "analysis_ready",
+            "retrieval": accepted_retrieval,
+            "analysis": {
+                "tool_proposal": next_proposal,
+            },
+        }
 
 
 def validate_tool_proposal(proposal: object) -> tuple[bool, str]:

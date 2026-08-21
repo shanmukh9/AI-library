@@ -1,4 +1,5 @@
 from agent_loop import (
+    AgentRunState,
     TOOL_HANDLERS,
     build_tool_call_fingerprint,
     run_agent_step,
@@ -165,7 +166,7 @@ def counting_inspection(*, function_name: str):
 
 
 TOOL_HANDLERS["inspect_lambda_metrics"] = counting_inspection
-seen_tool_calls = set()
+duplicate_run_state = AgentRunState()
 
 try:
     first_call = run_agent_step(
@@ -176,7 +177,7 @@ try:
         incident_accepted=True,
         action_evidence_complete=False,
         human_approved=False,
-        seen_tool_calls=seen_tool_calls,
+        run_state=duplicate_run_state,
     )
     duplicate_call = run_agent_step(
         "inspect_lambda_metrics",
@@ -186,7 +187,7 @@ try:
         incident_accepted=True,
         action_evidence_complete=False,
         human_approved=False,
-        seen_tool_calls=seen_tool_calls,
+        run_state=duplicate_run_state,
     )
 
     assert first_call["status"] == "executed"
@@ -197,6 +198,42 @@ try:
     print("PASS duplicate tool call executes only once per agent run")
 finally:
     TOOL_HANDLERS["inspect_lambda_metrics"] = original_inspection_handler
+
+
+budget_run_state = AgentRunState(max_steps=2)
+
+first_invalid_step = run_agent_step(
+    "inspect_lambda_metrics",
+    tool_arguments={"function_name": 123},
+    incident_accepted=True,
+    action_evidence_complete=False,
+    human_approved=False,
+    run_state=budget_run_state,
+)
+second_invalid_step = run_agent_step(
+    "inspect_lambda_metrics",
+    tool_arguments={"function_name": ""},
+    incident_accepted=True,
+    action_evidence_complete=False,
+    human_approved=False,
+    run_state=budget_run_state,
+)
+third_valid_step = run_agent_step(
+    "inspect_lambda_metrics",
+    tool_arguments={"function_name": "payment-processor"},
+    incident_accepted=True,
+    action_evidence_complete=False,
+    human_approved=False,
+    run_state=budget_run_state,
+)
+
+assert first_invalid_step["status"] == "blocked"
+assert second_invalid_step["status"] == "blocked"
+assert third_valid_step["status"] == "step_limit_reached"
+assert third_valid_step["tool_executed"] is False
+assert budget_run_state.steps_used == 2
+
+print("PASS invalid iterations consume the per-run step budget")
 
 
 rollback_result = run_agent_step(
